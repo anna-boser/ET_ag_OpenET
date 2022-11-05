@@ -80,7 +80,7 @@ process <- function(year, months, var="ETdaily", alg="ALEXI"){
 }
 
 years <- 2019:2021
-months <- 1:12
+months <- list(c(1,2), c(3,4), c(5,6), c(7,8), c(9,10), c(11,12))
 for (year in years){
   no_cores <- detectCores() - 1# Calculate the number of cores
   print(no_cores)
