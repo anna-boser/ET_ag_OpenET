@@ -98,6 +98,6 @@ for (year in years){
   no_cores <- detectCores() - 1 # Calculate the number of cores
   print(no_cores)
   cl <- makeCluster(no_cores, type="FORK") # Initiate cluster
-  parLapply(cl, months, process)
+  parLapply(cl, months, process_pet, year)
   stopCluster(cl)
 }
