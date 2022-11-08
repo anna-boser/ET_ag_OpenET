@@ -133,13 +133,17 @@ slope_clip_loc <- here("data", "2_intermediate", "topography", "slope_hydrologic
 # Topographic Wetness Index (TWI) calculated in QGIS 
 # following tutorial https://www.youtube.com/watch?v=aHCLCUwg3O0 
 # using files created in 1_generate_datasets/1_intermediate/6_topography.R
-twi_raw_loc <- here("data", "2_intermediate", "topography", "twi_hydrologic_regions.tif")
+twi_raw_loc <- here("data", "2_intermediate", "topography", "1_twi_hydrologic_regions.tif")
 
 # TWI resampled and clipped to study area 
-twi_resampled_loc <- here("data", "2_intermediate", "topography", "twi_hydrologic_regions_resmapled.tif")
-twi_loc <- here("data", "2_intermediate", "topography", "twi.tif")
+twi_resampled_loc <- here("data", "2_intermediate", "topography", "2_twi_hydrologic_regions_resmapled.tif")
+twi_loc <- here("data", "2_intermediate", "topography", "3_twi.tif")
 
 # county shapefile
+# from https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_county_500k.zip
 counties_loc <- here("data", "1_raw", "counties", "cb_2018_us_county_500k.shp")
 
+# a table with the location of a pixel and the county it belongs in
+# created in 3_analysis/6_topography.R
+county_table_loc <- here("data", "4_for_analysis", "additional_data", "counties.csv")
 
