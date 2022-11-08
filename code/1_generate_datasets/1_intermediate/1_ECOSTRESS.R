@@ -35,6 +35,8 @@ read_resample <- function(file){
   
   # remove cloud affected pixels
   if (var=="ETdaily" & alg=="ALEXI"){ 
+    # in general, remove all pixels that are below 0. 
+    values(raster) <- ifelse(values(raster)<=0, NA, values(r))
     # if there are pixels above 15mm in an image, it is affected by clouds. 
     if (length(values(raster)[(values(raster)>15&!is.na(values(raster)))]) != 0){
       # in this case, we remove all pixels above 15 and below 0.01 mm
