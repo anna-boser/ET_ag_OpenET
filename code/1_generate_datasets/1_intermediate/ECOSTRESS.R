@@ -13,7 +13,7 @@ library(lubridate)
 library(sf)
 library(parallel)
 
-source(here("code", "file_paths.R"))
+source("file_paths.R")
 
 ###############################################################################
 # consistent grid all will be resampled to
