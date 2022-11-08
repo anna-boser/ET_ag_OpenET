@@ -99,4 +99,15 @@ PET_means_path <- here("data", "2_intermediate", "PET", "1_means")
 PET_resampled_path <- here("data", "2_intermediate", "PET", "2_resampled")
 PET_study_area_path <- here("data", "2_intermediate", "PET", "3_study_area_means")
 
+# soils -- California storie index raw data
+# from gSSURGO and STATSGO2 resampled to the grid of gNATSGO. 
+# Obtained through personal correspondence with the CA State Soil Scientist 
+# Campbell, Steve - FPAC-NRCS, Portland, OR <steve.campbell@usda.gov>
+gNATSGO_grid_loc <- here("data", "1_raw", "CA_storie", "CA_gNATSGO_MuRaster_tif", "MapunitRaster_10m.tif")
+storie_index_loc <- here("data", "1_raw", "CA_storie", "CA_all_NASIS_Storie_Index_SSURGO_STATSGO2.csv")
 
+# intermediate soil data
+# created in 1_generate_datasets/1_intermediate/5_soils.R 5.5_soils.py
+gNATSGO_storie_loc <- here("data", "2_intermediate", "CA_storie", "gNATSGO_storie.tif")
+CA_storie_resampled_loc <- here("data", "2_intermediate", "CA_storie", "CA_storie_index.tif")
+storie_loc <- here("data", "2_intermediate", "CA_storie", "storie_index.tif")
