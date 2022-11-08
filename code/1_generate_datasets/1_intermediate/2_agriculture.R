@@ -12,7 +12,7 @@ library(fasterize)
 source("file_paths.R")
 
 # DWR
-DWR <- read_sf(dwr_crop_loc) 
+DWR <- read_sf(raw_dwr_loc) 
 DWR <- st_zm(DWR) # DWR in 3 dims with 0 for z value
 
 DWR$CLASS2 %>% unique()
