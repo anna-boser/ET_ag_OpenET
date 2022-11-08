@@ -95,8 +95,8 @@ raw_PET_path <- here("data", "1_raw", "PET")
 
 # Intermediate PET data
 # created in 1_generate_datasets/1_intermediate/PET.R
-PET_means_path <- here("data", "2_intermediate", "PET", "means")
-PET_resampled_path <- here("data", "2_intermediate", "PET", "resampled")
-PET_study_area_path <- here("data", "2_intermediate", "PET", "study_area")
+PET_means_path <- here("data", "2_intermediate", "PET", "1_means")
+PET_resampled_path <- here("data", "2_intermediate", "PET", "2_resampled")
+PET_study_area_path <- here("data", "2_intermediate", "PET", "3_study_area_means")
 
 
