@@ -41,7 +41,7 @@ read_resample <- function(file){
 # year is a numeric arguments
 # months is a list of numbers (e.g. c(1,2))
 # options for var: 'ETdaily', 'ETdailyUncertainty', 'QualityFlag'
-process <- function(year, months, var="ETdaily", alg="ALEXI"){
+process <- function(months, year, var="ETdaily", alg="ALEXI"){
   print(paste("Processing year", year, "and month(s)", paste(months, collapse="+")))
   # list the files for this year
   files <- list.files(here(raw_ecostress_path, year), 
@@ -52,7 +52,7 @@ process <- function(year, months, var="ETdaily", alg="ALEXI"){
 
   # subset for this month
   timestamps <- str_extract(files, regex('(?<=_doy)[0-9]*(?=_aid0001.tif)'))
-  date <- as.Date(timestamps, "%Y%j%H%M%S")
+  dates <- as.Date(timestamps, "%Y%j%H%M%S")
   files <- files[month(dates) %in% months]
   
   # read and resample 
@@ -82,10 +82,10 @@ process <- function(year, months, var="ETdaily", alg="ALEXI"){
 years <- 2019:2021
 months <- list(c(1,2), c(3,4), c(5,6), c(7,8), c(9,10), c(11,12))
 for (year in years){
-  no_cores <- detectCores() - 1# Calculate the number of cores
+  no_cores <- detectCores() - 1 # Calculate the number of cores
   print(no_cores)
   cl <- makeCluster(no_cores, type="FORK") # Initiate cluster
-  parLapply(cl, months, process)
+  parLapply(cl, months, process, year=year)
   stopCluster(cl)
 }
 
