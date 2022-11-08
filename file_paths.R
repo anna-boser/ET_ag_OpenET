@@ -111,3 +111,17 @@ storie_index_loc <- here("data", "1_raw", "CA_storie", "CA_all_NASIS_Storie_Inde
 gNATSGO_storie_loc <- here("data", "2_intermediate", "CA_storie", "gNATSGO_storie.tif")
 CA_storie_resampled_loc <- here("data", "2_intermediate", "CA_storie", "CA_storie_index.tif")
 storie_loc <- here("data", "2_intermediate", "CA_storie", "storie_index.tif")
+
+# DEM: 90m resolution western US elevation data
+# from https://www.sciencebase.gov/catalog/item/542aebf9e4b057766eed286a
+dem_loc <- here("data", "1_raw", "DEM", "dem90_hf.tif")
+
+# processed topography data: elevation, aspect, slope, and topographic 
+# created in 1_generate_datasets/1_intermediate/6_topography.R
+ca_elevation_loc <- here("data", "2_intermediate", "topography", "ca_elevation.tif")
+ca_slope_loc <- here("data", "2_intermediate", "topography", "ca_slope.tif")
+ca_aspect_loc <- here("data", "2_intermediate", "topography", "ca_aspect.tif")
+elevation_loc <- here("data", "2_intermediate", "topography", "elevation.tif")
+slope_loc <- here("data", "2_intermediate", "topography", "slope.tif")
+aspect_loc <- here("data", "2_intermediate", "topography", "aspect.tif")
+
