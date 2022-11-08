@@ -81,6 +81,7 @@ process_pet <- function(months, year){
   #############################################################################
   # resample
   resampled <- mean %>% projectRaster(CA_grid) %>% resample(CA_grid, method = "bilinear")
+  rm(mean)
   
   # save
   writeRaster(resampled, here(PET_resampled_path, filename), "GTiff", overwrite=TRUE)
@@ -88,6 +89,7 @@ process_pet <- function(months, year){
   #############################################################################
   # clip to study area
   sa <- mask(resampled, study_area) %>% crop(study_area)
+  rm(resampled)
   
   # save
   writeRaster(sa, here(PET_study_area_path, filename), "GTiff", overwrite=TRUE)
