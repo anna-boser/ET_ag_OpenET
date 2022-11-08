@@ -32,6 +32,16 @@ grid <- raster(grid_loc)
 read_resample <- function(file){
   raster <- raster(file)
   print("raster read")
+  
+  # remove cloud affected pixels
+  if (var=="ETdaily" & alg=="ALEXI"){ 
+    # if there are pixels above 15mm in an image, it is affected by clouds. 
+    if (length(values(raster)[(values(raster)>15&!is.na(values(raster)))]) != 0){
+      # in this case, we remove all pixels above 15 and below 0.01 mm
+      values(raster) <- ifelse(values(raster)>15|values(raster)<=0.01, NA, values(r))
+    }
+  }
+  
   raster <- raster(file) %>% resample(grid, method = "bilinear")
   print("raster resampled")
   return(raster)
@@ -88,4 +98,3 @@ for (year in years){
   parLapply(cl, months, process, year=year)
   stopCluster(cl)
 }
-

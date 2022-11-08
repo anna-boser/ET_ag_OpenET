@@ -125,3 +125,21 @@ elevation_loc <- here("data", "2_intermediate", "topography", "elevation.tif")
 slope_loc <- here("data", "2_intermediate", "topography", "slope.tif")
 aspect_loc <- here("data", "2_intermediate", "topography", "aspect.tif")
 
+# slope in radians and dem to feed into QGIS to get the TWI
+# created in 1_generate_datasets/1_intermediate/6_topography.R
+dem_clip_loc <- here("data", "2_intermediate", "topography", "dem_hydrologic_regions.tif")
+slope_clip_loc <- here("data", "2_intermediate", "topography", "slope_hydrologic_regions.tif")
+
+# Topographic Wetness Index (TWI) calculated in QGIS 
+# following tutorial https://www.youtube.com/watch?v=aHCLCUwg3O0 
+# using files created in 1_generate_datasets/1_intermediate/6_topography.R
+twi_raw_loc <- here("data", "2_intermediate", "topography", "twi_hydrologic_regions.tif")
+
+# TWI resampled and clipped to study area 
+twi_resampled_loc <- here("data", "2_intermediate", "topography", "twi_hydrologic_regions_resmapled.tif")
+twi_loc <- here("data", "2_intermediate", "topography", "twi.tif")
+
+# county shapefile
+counties_loc <- here("data", "1_raw", "counties", "cb_2018_us_county_500k.shp")
+
+
