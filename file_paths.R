@@ -144,6 +144,12 @@ twi_loc <- here("data", "2_intermediate", "topography", "3_twi.tif")
 counties_loc <- here("data", "1_raw", "counties", "cb_2018_us_county_500k.shp")
 
 # a table with the location of a pixel and the county it belongs in
-# created in 3_analysis/6_topography.R
+# created in 3_analysis/additional_data/1_counties.R
 county_table_loc <- here("data", "4_for_analysis", "additional_data", "counties.csv")
+
+# A table with the location of a pixel and its crop type, sub crop type, and if multiple crops are grown on that pixel.
+# Pure pixels only. 
+# created in 3_analysis/additional_data/1_counties.R
+crops_dwr_table_loc <- here("data", "4_for_analysis", "additional_data", "crops_all_dwr_fallow.csv")
+
 
