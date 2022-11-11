@@ -15,7 +15,7 @@ library(Rcpp)
 source("file_paths.R")
 
 # Create raster
-grid <- raster(CA_grid_loc)
+grid <- raster(grid_loc)
 
 # polygon: crops
 DWR <- read_sf(raw_dwr_loc)  #%>%
