@@ -30,21 +30,20 @@ grid <- raster(grid_loc)
 
 # define read and resample function
 read_resample <- function(file){
-  raster <- raster(file)
+  r <- raster(file)
   print("raster read")
   
   # remove cloud affected pixels
-  if (var=="ETdaily" & alg=="ALEXI"){ 
-    # in general, remove all pixels that are below 0. 
-    values(raster) <- ifelse(values(raster)<=0, NA, values(r))
-    # if there are pixels above 15mm in an image, it is affected by clouds. 
-    if (length(values(raster)[(values(raster)>15&!is.na(values(raster)))]) != 0){
-      # in this case, we remove all pixels above 15 and below 0.01 mm
-      values(raster) <- ifelse(values(raster)>15|values(raster)<=0.01, NA, values(r))
-    }
+  # in general, remove all pixels that are below 0. 
+  values(r) <- ifelse(values(r)<=0, NA, values(r))
+  # if there are pixels above 15mm in an image, it is affected by clouds. 
+  if (length(values(r)[(values(r)>15&!is.na(values(r)))]) != 0){
+    # in this case, we remove all pixels above 15 and below 0.01 mm
+    values(r) <- ifelse(values(r)>15|values(r)<=0.01, NA, values(r))
   }
+  print("cloud contamination removed")
   
-  raster <- raster(file) %>% resample(grid, method = "bilinear")
+  raster <- r %>% resample(grid, method = "bilinear")
   print("raster resampled")
   return(raster)
 }
