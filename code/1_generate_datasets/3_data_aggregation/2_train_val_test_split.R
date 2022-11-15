@@ -50,6 +50,6 @@ split <- function(dataset){
 }
 
 # apply function to all datasets
-for (d in datasets){
-  split(d)
+for (dataset in datasets){
+  split(dataset)
 }

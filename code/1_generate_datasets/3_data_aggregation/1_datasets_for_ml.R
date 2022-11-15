@@ -15,7 +15,7 @@ source("file_paths.R")
 
 # my grid and study area
 grid <- raster(grid_loc)
-study_area <- st_read(study_area_loc) %>% st_transform(st_crs(CA_grid))
+study_area <- st_read(study_area_loc) %>% st_transform(st_crs(grid))
 
 # turn into raster then dataset
 study_area_raster <- fasterize(study_area, grid) 
@@ -71,18 +71,18 @@ time_varrying_df <- rbindlist(lapply(months, add_monthgroup, dataset=study_area_
 
 # save only the agricultural dataset
 ag = time_varrying_df[!is.na(Agriculture)]
-dir.create(ag_data_loc)
-fwrite(ag, here(ag_data_loc, "agriculture.csv"), append=FALSE)
+dir.create(directory_path(ag_data_loc))
+fwrite(ag, here(ag_data_loc), append=FALSE)
 
 # save the natural dataset (FVEG, CPAD, and CDL)
 fveg = time_varrying_df[!is.na(FVEG)]
-dir.create(natural_data_loc)
-fwrite(fveg, here(natural_data_loc, "fveg.csv"), append=FALSE)
+dir.create(natural_data_path)
+fwrite(fveg, here(natural_data_path, "fveg.csv"), append=FALSE)
 
 cpad = time_varrying_df[!is.na(CPAD)]
-fwrite(cpad, here(natural_data_loc, "cpad.csv"), append=FALSE)
+fwrite(cpad, here(natural_data_path, "cpad.csv"), append=FALSE)
 
 cdl = time_varrying_df[!is.na(CDL)]
-fwrite(cdl, here(natural_data_loc, "cdl.csv"), append=FALSE)
+fwrite(cdl, here(natural_data_path, "cdl.csv"), append=FALSE)
 
 
