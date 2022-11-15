@@ -36,4 +36,32 @@ writeRaster(aspect, ca_aspect_loc, overwrite = TRUE)
 aspect <- mask(aspect, study_area) %>% crop(study_area) # clip
 writeRaster(aspect, aspect_loc, "GTiff", overwrite=TRUE)
 
+###############################################################################
+###############################################################################
 # calculate the topographic wetness index
+dem <- raster(dem_loc)
+hydro <- st_read("/Users/annaboser/Documents/GitHub/ET_ag_disALEXI/data/1_raw/Hydrologic_Regions/Hydrologic_Regions.shp") %>% 
+  st_transform(st_crs(dem)) %>% filter(HR_NAME %in% c("San Joaquin River", "Tulare Lake", "Sacramento River"))
+study_area <- st_read(study_area_loc) %>% st_transform(st_crs(dem))
+inc <- st_as_sf(st_union(study_area, hydro))
+dem <- mask(dem, inc) %>% crop(inc)
+writeRaster(dem, dem_clip_loc, "GTiff", overwrite=TRUE)
+slope <- raster::terrain(dem, opt = "slope")
+writeRaster(slope, slope_clip_loc, "GTiff", overwrite=TRUE)
+
+###############################################################################
+# from here, go to QGIS and calculate the TWI using the slope and dem rasters. 
+# see https://www.youtube.com/watch?v=aHCLCUwg3O0 for more info
+###############################################################################
+
+# my grid and study area
+CA_grid <- raster(CA_grid_loc)
+study_area <- st_read(study_area_loc) %>% st_transform(st_crs(CA_grid))
+
+# read in TWI, resample, and clip
+twi <- raster(twi_raw_loc) %>% projectRaster(CA_grid) %>% resample(CA_grid, method = "bilinear")
+writeRaster(twi, twi_resampled_loc, overwrite = TRUE)
+
+twi <- mask(twi, study_area) %>% crop(study_area) # clip
+writeRaster(twi, twi_loc, overwrite = TRUE)
+
