@@ -59,6 +59,7 @@ ag_rast_loc <- here("data", "2_intermediate", "agriculture", "ag.tif")
 CA_shp_loc <- here("data", "1_raw", "study_area", "california", "california.shp")
 
 #Cropland data layer (CDL)
+CDL_path <- here("data", "1_raw", "CDL")
 CDL2019_loc <- here("data", "1_raw", "CDL", "CDL2019", "2019_30m_cdls.img")
 CDL2020_loc <- here("data", "1_raw", "CDL", "CDL2020", "2020_30m_cdls.img")
 CDL2021_loc <- here("data", "1_raw", "CDL", "CDL2021", "2021_30m_cdls.img")
@@ -126,30 +127,46 @@ slope_loc <- here("data", "2_intermediate", "topography", "slope.tif")
 aspect_loc <- here("data", "2_intermediate", "topography", "aspect.tif")
 
 # slope in radians and dem to feed into QGIS to get the TWI
-# created in 1_generate_datasets/1_intermediate/6_topography.R
-dem_clip_loc <- here("data", "2_intermediate", "topography", "dem_hydrologic_regions.tif")
-slope_clip_loc <- here("data", "2_intermediate", "topography", "slope_hydrologic_regions.tif")
+# created in 1_generate_datasets/1_intermediate/7_topographic_wetness_index.R
+dem_clip_loc <- here("data", "2_intermediate", "twi", "dem_hydrologic_regions.tif")
+slope_clip_loc <- here("data", "2_intermediate", "twi", "slope_hydrologic_regions.tif")
 
 # Topographic Wetness Index (TWI) calculated in QGIS 
 # following tutorial https://www.youtube.com/watch?v=aHCLCUwg3O0 
-# using files created in 1_generate_datasets/1_intermediate/6_topography.R
-twi_raw_loc <- here("data", "2_intermediate", "topography", "1_twi_hydrologic_regions.tif")
+# using files created in 1_generate_datasets/1_intermediate/7_topographic_wetness_index.R
+upslope_area_loc <- here("data", "2_intermediate", "twi", "upslope_area_hydrologic_regions.tif")
 
 # TWI resampled and clipped to study area 
-twi_resampled_loc <- here("data", "2_intermediate", "topography", "2_twi_hydrologic_regions_resmapled.tif")
-twi_loc <- here("data", "2_intermediate", "topography", "3_twi.tif")
+# created in 1_generate_datasets/1_intermediate/7_topographic_wetness_index.R
+twi_resampled_loc <- here("data", "2_intermediate", "twi", "twi_hydrologic_regions_resmapled.tif")
+twi_loc <- here("data", "2_intermediate", "twi", "twi.tif")
 
 # county shapefile
 # from https://www2.census.gov/geo/tiger/GENZ2018/shp/cb_2018_us_county_500k.zip
 counties_loc <- here("data", "1_raw", "counties", "cb_2018_us_county_500k.shp")
 
 # a table with the location of a pixel and the county it belongs in
-# created in 3_analysis/additional_data/1_counties.R
+# created in 1_generate_datasets/1_intermediate/additional_data/1_counties.R
 county_table_loc <- here("data", "4_for_analysis", "additional_data", "counties.csv")
 
 # A table with the location of a pixel and its crop type, sub crop type, and if multiple crops are grown on that pixel.
 # Pure pixels only. 
-# created in 3_analysis/additional_data/1_counties.R
+# created in 1_generate_datasets/1_intermediate/additional_data/2_crops.R
 crops_dwr_table_loc <- here("data", "4_for_analysis", "additional_data", "crops_all_dwr_fallow.csv")
 
+# Same table as crops_dwr_table_loc but with fallow fields filtered according to CDL
+# created in 1_generate_datasets/1_intermediate/additional_data/2.5_crops.R
+crops_table_loc <- here("data", "4_for_analysis", "additional_data", "crops.csv")
+
+# datasets processed for training of the ML model (has CDL, CPAD, and FVEG natural pixels)
+# created in 1_generate_datasets/3_data_aggregation/datasets_for_ml.R
+natural_data_path <- here("data", "3_for_counterfactual", "training_data")
+
+# datasets processed for getting ML model predictions (has DWR agricultural pixels)
+# created in 1_generate_datasets/3_data_aggregation/datasets_for_ml.R
+ag_data_loc <- here("data", "3_for_counterfactual", "agriculture", "agriculture.csv")
+
+# same as ag_data_loc but only the fallow fields
+# created in 1_generate_datasets/3_data_aggregation/3_fallow_only.R
+fallow_data_loc <- here("data", "3_for_counterfactual", "agriculture", "agriculture.csv")
 
