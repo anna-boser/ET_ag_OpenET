@@ -5,7 +5,8 @@
 
 # Anna Boser, Nov 8, 2022
 
-crop_pixels <- fread(file = file.path(here("data", "intermediate", "crops", "crops_dwr2019.csv")))
+crop_pixels <- fread(crops_dwr_table_loc)
+grid <- raster(grid_loc)
 
 # get CDL for years of interest
 years <- c(2019, 2020, 2021)
@@ -14,19 +15,14 @@ readCDL <- function(year){
                "raw",
                "CDL",
                paste0("CDL", year),
-               paste0(year, "_30m_cdls."))
-  if (year >= 2021){ # extension changes by year
-    file <- paste0(file, "tif")
-  } else {
-    file <- paste0(file, "img")
-  }
+               paste0(year, "_30m_cdls.img"))
   return(raster(file))
 }
 CDLs = lapply(years, readCDL)
 
 # crop CDL layers to the central valley
-CV <- st_read(here("data/raw/shapefiles/cimis_CV/cimis_CV.shp")) %>% st_transform(st_crs(CDLs[[1]]))
-CDLs <- lapply(CDLs, crop, CV)
+study_area <- st_read(study_area_loc) %>% st_transform(st_crs(CDLs[[1]]))
+CDLs <- lapply(CDLs, crop, study_area)
 
 # according to the metadata, 61 is Fallow/Idle
 fallow_mask <- function(CDL){
@@ -44,7 +40,7 @@ values(fallow_mean) <- ifelse(values(fallow_mean) == 1, 1, 0)
 fallow_resampled <- fallow_mean %>% projectRaster(grid) %>% raster::resample(grid, method = "bilinear")
 
 # keep if fallow lands are persistently in a pixel
-values(fallow_resampled) <- ifelse(values(fallow_resampled) == 1, 1, 0) # change threshold here
+values(fallow_resampled) <- ifelse(values(fallow_resampled) == 1, 1, 0) 
 
 # turn raster of fallow lands into a dataframe
 fallow_CDL <- as.data.frame(fallow_resampled, xy = TRUE) %>% filter(layer == 1)
@@ -58,4 +54,5 @@ print(paste("Fraction of DWR fallow lands conserved:", nrow(both)/nrow(fallow_DW
 filtered_crop_pixels <- filter(crop_pixels, !(CLASS2 %in% c("X", "I") & !(paste(x, y) %in% paste(both$x, both$y))))
 
 # Save filtered_crop_pixels
-fwrite(filtered_crop_pixels, file = file.path(here("data", "intermediate", "crops", "crops_cdl&dwr2019.csv")))
+fwrite(filtered_crop_pixels, crops_table_loc)
+

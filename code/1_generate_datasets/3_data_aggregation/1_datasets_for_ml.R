@@ -36,7 +36,8 @@ layer_locations <- c("Agriculture"=ag_rast_loc,
                      "Elevation"=elevation_loc, 
                      "Slope"=slope_loc, 
                      "Aspect"=aspect_loc,
-                     "Soil"=storie_loc)
+                     "Soil"=storie_loc, 
+                     "TWI"=twi_loc)
 
 # tack on time invarying columns
 for (i in 1:length(layer_locations)){
@@ -71,17 +72,17 @@ time_varrying_df <- rbindlist(lapply(months, add_monthgroup, dataset=study_area_
 # save only the agricultural dataset
 ag = time_varrying_df[!is.na(Agriculture)]
 dir.create(ag_data_loc)
-fwrite(ag, here(ag_data_loc, "agriculture.tif"), append=FALSE)
+fwrite(ag, here(ag_data_loc, "agriculture.csv"), append=FALSE)
 
 # save the natural dataset (FVEG, CPAD, and CDL)
 fveg = time_varrying_df[!is.na(FVEG)]
 dir.create(natural_data_loc)
-fwrite(fveg, here(natural_data_loc, "fveg.tif"), append=FALSE)
+fwrite(fveg, here(natural_data_loc, "fveg.csv"), append=FALSE)
 
 cpad = time_varrying_df[!is.na(CPAD)]
-fwrite(cpad, here(natural_data_loc, "cpad.tif"), append=FALSE)
+fwrite(cpad, here(natural_data_loc, "cpad.csv"), append=FALSE)
 
 cdl = time_varrying_df[!is.na(CDL)]
-fwrite(cdl, here(natural_data_loc, "cdl.tif"), append=FALSE)
+fwrite(cdl, here(natural_data_loc, "cdl.csv"), append=FALSE)
 
 

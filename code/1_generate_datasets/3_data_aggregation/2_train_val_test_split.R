@@ -25,9 +25,9 @@ library(stringr)
 
 source("file_paths.R")
 
-datasets <- c("fveg.tif", 
-              "cpad.tif", 
-              "cdl.tif")
+datasets <- c("fveg.csv", 
+              "cpad.csv", 
+              "cdl.csv")
 
 # condition for inclusion
 check_inc <- function(dim){
