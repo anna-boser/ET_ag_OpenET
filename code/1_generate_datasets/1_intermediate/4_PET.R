@@ -104,3 +104,19 @@ for (year in years){
   parLapply(cl, months, process_pet, year)
   stopCluster(cl)
 }
+
+# then average over all years for each monthgroup
+years <- 2019:2021
+months <- c("1+2", "3+4", "5+6", "7+8", "9+10", "11+12")
+for (month in months){
+  # get all tifs for that monthgroup
+  tifs <- here(PET_study_area_path, paste0(month, "-", years, ".tif"))
+  
+  # take the mean across monthgroup
+  raster <- mean(brick(lapply(tifs, raster)))
+  
+  # save
+  writeRaster(raster, here(PET_study_area_path, paste0(month, "-all.tif")), "GTiff", overwrite=TRUE)
+}
+
+
