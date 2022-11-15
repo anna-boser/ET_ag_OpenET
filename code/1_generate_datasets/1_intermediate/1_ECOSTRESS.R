@@ -49,14 +49,17 @@ read_resample <- function(file){
 }
 
 
-# year is a numeric arguments
+# year is a numeric arguments. if year == "all", then no difference will be paid between years. 
 # months is a list of numbers (e.g. c(1,2))
 # options for var: 'ETdaily', 'ETdailyUncertainty', 'QualityFlag'
-process <- function(months, year, var="ETdaily", alg="ALEXI"){
+process <- function(months, year="all", var="ETdaily", alg="ALEXI"){
   print(paste("Processing year", year, "and month(s)", paste(months, collapse="+")))
   # list the files for this year
-  files <- list.files(here(raw_ecostress_path, year), 
-                      full.names = TRUE) %>% unique() #get rid of any duplicates
+  if (year == "all"){
+    files <- list.files(here(raw_ecostress_path), full.names = TRUE, recursive = TRUE) %>% unique() #get rid of any duplicates
+  } else {
+    files <- list.files(here(raw_ecostress_path, year), full.names = TRUE) %>% unique() #get rid of any duplicates
+  }
   
   # subset for this variable
   files <- str_subset(files, regex(paste0('(?<=', alg, '_)', var, '(?=_doy)')))
@@ -76,9 +79,9 @@ process <- function(months, year, var="ETdaily", alg="ALEXI"){
   rm(rasters)
   
   # save the brick
-  print("saving the brick")
   filename <- paste0(paste(months, collapse="+"), "-", year, ".tif")
-  writeRaster(brick, here(ECOSTRESS_bricks_path, filename), "GTiff", overwrite=TRUE)
+  # print("saving the brick")
+  # writeRaster(brick, here(ECOSTRESS_bricks_path, filename), "GTiff", overwrite=TRUE)
   
   # take the mean
   print("taking the mean of the brick")
@@ -90,6 +93,8 @@ process <- function(months, year, var="ETdaily", alg="ALEXI"){
   writeRaster(mean, here(intermediate_ecostress_path, filename), "GTiff", overwrite=TRUE)
 }
 
+# different monthgroups for each year
+
 years <- 2019:2021
 months <- list(c(1,2), c(3,4), c(5,6), c(7,8), c(9,10), c(11,12))
 for (year in years){
@@ -99,3 +104,12 @@ for (year in years){
   parLapply(cl, months, process, year=year)
   stopCluster(cl)
 }
+
+# different months not discriminating by year
+
+months <- list(c(1,2), c(3,4), c(5,6), c(7,8), c(9,10), c(11,12))
+no_cores <- detectCores() - 1 # Calculate the number of cores
+print(no_cores)
+cl <- makeCluster(no_cores, type="FORK") # Initiate cluster
+parLapply(cl, months, process, year="all")
+stopCluster(cl)
