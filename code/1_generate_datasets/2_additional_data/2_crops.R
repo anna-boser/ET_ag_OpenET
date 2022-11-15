@@ -119,7 +119,7 @@ crop_pixels$cropnames <- cropnames[crop_pixels$CLASS2]
 subcrop_pixels$subcropnames <- subcropnames[subcrop_pixels$subclass]
 
 # integrate crop_pixels and subcrop_pixels
-subgeoweights$CLASS2=NULL
+subcrop_pixels$CLASS2=NULL
 cropdf <- merge(crop_pixels, subcrop_pixels, by = c("x", "y", "cell"), all=TRUE)
 
 ## Save outputs 
