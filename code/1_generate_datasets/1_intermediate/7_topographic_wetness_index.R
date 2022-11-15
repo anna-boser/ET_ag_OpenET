@@ -1,4 +1,6 @@
-# This script uses the DEM elevations data to create rasters for elevation, aspect and slope
+###############################################################################
+###############################################################################
+# calculate the topographic wetness index
 
 # Anna Boser Nov 7 2022
 
@@ -13,32 +15,6 @@ source("file_paths.R")
 CA_grid <- raster(CA_grid_loc)
 study_area <- st_read(study_area_loc) %>% st_transform(st_crs(CA_grid))
 
-# elevation from dem
-elevation <- raster(dem_loc) %>% projectRaster(CA_grid) %>% resample(CA_grid, method = "bilinear")
-print(elevation)
-
-writeRaster(elevation, ca_elevation_loc, overwrite = TRUE)
-# elevation <- raster(ca_elevation_loc)
-
-elevation <- mask(elevation, study_area) %>% crop(study_area) # clip
-writeRaster(elevation, elevation_loc, "GTiff", overwrite=TRUE)
-
-# make slope and aspect layers
-slope <- raster::terrain(elevation, opt = "slope")
-writeRaster(slope, ca_slope_loc, overwrite = TRUE)
-# slope <- raster(ca_slope_loc)
-slope <- mask(slope, study_area) %>% crop(study_area) # clip
-writeRaster(slope, slope_loc, "GTiff", overwrite=TRUE)
-
-aspect <- raster::terrain(elevation, opt = "aspect")
-writeRaster(aspect, ca_aspect_loc, overwrite = TRUE)
-# aspect <- raster(ca_aspect_loc)
-aspect <- mask(aspect, study_area) %>% crop(study_area) # clip
-writeRaster(aspect, aspect_loc, "GTiff", overwrite=TRUE)
-
-###############################################################################
-###############################################################################
-# calculate the topographic wetness index
 dem <- raster(dem_loc)
 
 # get the area that is in the 3 hydrological regions plus a little outside that is still in our study area
@@ -56,18 +32,23 @@ slope <- raster::terrain(dem, opt = "slope")
 writeRaster(slope, slope_clip_loc, "GTiff", overwrite=TRUE)
 
 ###############################################################################
-# from here, go to QGIS and calculate the TWI using the slope and dem rasters. 
+# from here, go to QGIS and calculate the upslope area using the slope and dem rasters. 
 # see https://www.youtube.com/watch?v=aHCLCUwg3O0 for more info
+
+# because this takes a very long time, I resampled the DEM to 1km before doing it. 
 ###############################################################################
 
 # my grid and study area
 CA_grid <- raster(CA_grid_loc)
 study_area <- st_read(study_area_loc) %>% st_transform(st_crs(CA_grid))
 
-# read in TWI, resample, and clip
-twi <- raster(twi_raw_loc) %>% projectRaster(CA_grid) %>% resample(CA_grid, method = "bilinear")
+# read in the ingredients to calculating TWI and reproject them to the grid
+upslope_area <- raster(upslope_area_loc) %>% projectRaster(CA_grid) %>% resample(CA_grid, method = "bilinear")
+slope <- raster(slope_clip_loc) %>% projectRaster(CA_grid) %>% resample(CA_grid, method = "bilinear")
+
+# calculate TWI
+twi = log((upslope_area + 1 *1000) / tan(slope+.0000001)) # times 1000 because the size of the pixels for the upslope area was 1000m. Also add a small decimal to the slope since some are 0. 
 writeRaster(twi, twi_resampled_loc, overwrite = TRUE)
 
 twi <- mask(twi, study_area) %>% crop(study_area) # clip
 writeRaster(twi, twi_loc, overwrite = TRUE)
-
