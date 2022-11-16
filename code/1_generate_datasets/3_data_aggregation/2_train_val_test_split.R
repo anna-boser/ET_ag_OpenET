@@ -38,15 +38,16 @@ check_inc <- function(dim){
 
 # split and save function
 split <- function(dataset){
-  df <- fread(here(natural_data_loc, dataset))
+  df <- fread(here(natural_data_path, dataset))
   
   train <- filter(df, check_inc(x) & check_inc(y))
-  dir.create(here(natural_data_loc, "train"))
-  fwrite(train, here(natural_data_loc, "train", dataset), append=FALSE)
+  dir.create(here(natural_data_path, "train"))
+  fwrite(train, here(natural_data_path, "train", dataset), append=FALSE)
+  rm(train)
   
   test <- filter(df, !(check_inc(x) & check_inc(y)))
-  dir.create(here(natural_data_loc, "test"))
-  fwrite(train, here(natural_data_loc, "test", dataset), append=FALSE)
+  dir.create(here(natural_data_path, "test"))
+  fwrite(test, here(natural_data_path, "test", dataset), append=FALSE)
 }
 
 # apply function to all datasets

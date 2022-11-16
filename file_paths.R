@@ -168,5 +168,5 @@ ag_data_loc <- here("data", "3_for_counterfactual", "agriculture", "agriculture.
 
 # same as ag_data_loc but only the fallow fields
 # created in 1_generate_datasets/3_data_aggregation/3_fallow_only.R
-fallow_data_loc <- here("data", "3_for_counterfactual", "agriculture", "agriculture.csv")
+fallow_data_loc <- here("data", "3_for_counterfactual", "agriculture", "fallow.csv")
 
