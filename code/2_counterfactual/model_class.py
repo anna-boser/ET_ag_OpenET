@@ -15,7 +15,7 @@ import time
 
 class MyModel():
 
-    def __init__(self, dataset, regressor, experiment_name, features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], hparams=False):
+    def __init__(self, dataset, regressor, experiment_name, features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], hparam=False):
 
         # locate the natural and agricultural datasets you may want to use
         self.train_data_loc = str(here("data/3_for_counterfactual/training_data/train")) + "/" + dataset + ".csv"
@@ -24,11 +24,13 @@ class MyModel():
         self.ag_data_loc = str(here("data/3_for_counterfactual/agriculture/agriculture.csv"))
 
         self.regressor = regressor
-        self.hparams = hparams
+        self.hparam = hparam
         self.features = features
         self.experiment_name = experiment_name
         self.experiment_path = str(here("data/3_for_counterfactual/experiments")) + "/" + experiment_name
-        os.makedirs(self.experiment_path)
+
+        if not os.path.exists(self.experiment_path):
+            os.makedirs(self.experiment_path)
 
         # save the scripts that generated and called this object to the experiments folder
         shutil.copy(here("code/2_counterfactual/experiments.py"), self.experiment_path + "/experiments.py")
@@ -148,6 +150,24 @@ class MyModel():
 
         return
 
-        
+# test code for debugging 
+if __name__ == '__main__':
+
+    from sklearn.ensemble import RandomForestRegressor
+
+    # first, define your model 
+    model = MyModel(dataset="cpad", 
+                    regressor=RandomForestRegressor(n_estimators=100, verbose=1, random_state=0, n_jobs = -1), 
+                    experiment_name="exp_cpad_trial", 
+                    features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 
+                    hparam=False)
+
+    # second, perform a cross-validation using the test set
+    model.crossval(train_or_test="train")
+
+    # third, generate new predictions for fallow lands
+    model.train_model(train_or_test="train")
+    model.predictions(ag_or_fallow="fallow")
+
 
 

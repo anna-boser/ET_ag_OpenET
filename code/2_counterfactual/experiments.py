@@ -14,7 +14,7 @@ model = MyModel(dataset="cpad",
                 regressor=RandomForestRegressor(n_estimators=100, verbose=1, random_state=0, n_jobs = -1), 
                 experiment_name="exp_cpad_trial", 
                 features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 
-                hparams=False)
+                hparam=False)
 
 # second, perform a cross-validation using the test set
 model.crossval(train_or_test="train")
