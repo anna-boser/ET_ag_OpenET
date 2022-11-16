@@ -115,8 +115,14 @@ class MyModel():
         df = df.fillna(-9999)
 
         # split between predictors and predicted
-        X_train = df[self.features]
-        y_train = df['ET']
+        X = df[self.features]
+        y = df['ET']
+
+        if self.month:
+            df = pd.get_dummies(df, columns=["month"])
+            X_months = df[df.columns[df.columns.str.startswith("month")]]
+            X = pd.concat([X, X_months], join = 'outer', axis = 1)
+
 
         if self.hparam==True:
             # retrieve the parameters that were generated in 3_hyperparameter_tuning
@@ -124,7 +130,7 @@ class MyModel():
             self.regressor.set_params(**hyperparameters) # use the parameters from the randomized search
             
         print("regressor defined, training beginning", flush=True)
-        self.regressor.fit(X_train, y_train)
+        self.regressor.fit(X, y)
         print("training completed; pickle beginning", flush=True)
 
         # pickle the trained model
@@ -146,6 +152,11 @@ class MyModel():
         # split between predictors and predicted
         X = df[self.features]
         y = df['ET']
+
+        if self.month:
+            df = pd.get_dummies(df, columns=["month"])
+            X_months = df[df.columns[df.columns.str.startswith("month")]]
+            X = pd.concat([X, X_months], join = 'outer', axis = 1)
 
         y_pred = self.regressor.predict(X)
         df = df.assign(ET_pred=y_pred)

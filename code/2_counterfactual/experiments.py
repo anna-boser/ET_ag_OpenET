@@ -13,6 +13,7 @@ from sklearn.ensemble import RandomForestRegressor
 model = MyModel(dataset="fveg", 
                 regressor=RandomForestRegressor(n_estimators=100, verbose=1, random_state=0, n_jobs = -1), 
                 experiment_name="exp_fveg_trial", 
+                month=True,
                 features=["x", "y", "month", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 
                 hparam=False)
 
