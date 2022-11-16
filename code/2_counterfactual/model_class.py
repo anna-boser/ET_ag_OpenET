@@ -97,7 +97,7 @@ class MyModel():
             # df = df.assign('ET_pred'=y_pred)
         
         # save the full predictions using the spatial CV
-        df.to_csv(self.experiment_path+"crossval_predictions_" + train_or_test + ".csv", index=False)
+        df.to_csv(self.experiment_path+"/crossval_predictions_" + train_or_test + ".csv", index=False)
         print("crossval predictions saved", flush=True)
 
         return
