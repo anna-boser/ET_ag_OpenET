@@ -20,9 +20,9 @@ crops$cell <- NULL
 crops$x <- round(crops$x, 7)
 crops$y <- round(crops$y, 7)
 
-data <- merge(data, crops, by = c("x", "y"), all.x=TRUE)
+fallow <- merge(data, crops, by = c("x", "y"), all.x=TRUE)
 
-fallow <- filter(data, CLASS2 == "")
+fallow <- filter(fallow, CLASS2 == "X")
 fallow <- select(fallow, names(data))
 fwrite(fallow, fallow_data_loc)
 
