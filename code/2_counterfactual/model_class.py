@@ -15,7 +15,7 @@ import time
 
 class MyModel():
 
-    def __init__(self, dataset, regressor, experiment_name, features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], hparam=False):
+    def __init__(self, dataset, regressor, experiment_name, month=True, features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], hparam=False):
 
         # locate the natural and agricultural datasets you may want to use
         self.train_data_loc = str(here("data/3_for_counterfactual/training_data/train")) + "/" + dataset + ".csv"
@@ -28,6 +28,7 @@ class MyModel():
         self.features = features
         self.experiment_name = experiment_name
         self.experiment_path = str(here("data/3_for_counterfactual/experiments")) + "/" + experiment_name
+        self.month = month
 
         if not os.path.exists(self.experiment_path):
             os.makedirs(self.experiment_path)
@@ -43,10 +44,16 @@ class MyModel():
             df = pd.read_csv(self.train_data_loc)
         else:
             df = pd.read_csv(self.test_data_loc)
-        
+        df = df.fillna(-9999)
+    
         # retrive the features (columns) of interest 
         X = df[self.features]
         y = df['ET']
+    
+        if self.month:
+            df = pd.get_dummies(df, columns=["month"])
+            X_months = df[df.columns[df.columns.str.startswith("month")]]
+            X = pd.concat([X, X_months], join = 'outer', axis = 1)
 
         # retrieve the parameters..?
         if self.hparam==True:
@@ -105,6 +112,7 @@ class MyModel():
             df = pd.read_csv(self.train_data_loc)
         else:
             df = pd.read_csv(self.test_data_loc)
+        df = df.fillna(-9999)
 
         # split between predictors and predicted
         X_train = df[self.features]
@@ -133,6 +141,7 @@ class MyModel():
             df = pd.read_csv(self.ag_data_loc)
         else:
             df = pd.read_csv(self.fallow_data_loc)
+        df = df.fillna(-9999)
 
         # split between predictors and predicted
         X = df[self.features]
@@ -159,7 +168,8 @@ if __name__ == '__main__':
     model = MyModel(dataset="cpad", 
                     regressor=RandomForestRegressor(n_estimators=100, verbose=1, random_state=0, n_jobs = -1), 
                     experiment_name="exp_cpad_trial", 
-                    features=["x", "y", "month", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 
+                    month=True,
+                    features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 
                     hparam=False)
 
     # second, perform a cross-validation using the test set
