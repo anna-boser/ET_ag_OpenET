@@ -27,7 +27,7 @@ class MyModel():
         self.hparam = hparam
         self.features = features
         self.experiment_name = experiment_name
-        self.experiment_path = str(here("data/3_for_counterfactual/experiments")) + "/" + experiment_name
+        self.experiment_path = str(here("data/4_for_analysis/ML_outputs/experiments")) + "/" + experiment_name
         self.month = month
 
         if not os.path.exists(self.experiment_path):
