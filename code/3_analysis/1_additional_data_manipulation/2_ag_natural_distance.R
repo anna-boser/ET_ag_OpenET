@@ -12,25 +12,26 @@ library(dplyr)
 
 datasets <- c("fveg", "cpad", "cdl")
 
+distance_distribution_path <- here("data", "4_for_analysis", "distances")
+dir.create(distance_distribution_path)
+
 get_distance <- function(dataset){
   
-  # if there is no distribution of the distance between points, I need to make it. Otherwise, read it in. 
-  distance_distribution_path <- here("data", "4_for_analysis", "distances")
-  dir.create(distance_distribution_path)
-  dist_filename <- here(distance_distribution_path, paste0(dataset, ".csv"))
+  # name of file I need to create
+  dist_filename <- here(distance_distribution_path, paste0(dataset, ".csv")) 
   
   # read in the agriculture data 
-  ag <- fread(here("data", "3_for_counterfactual", "agriculture", "agriculture.csv"))
+  ag <- fread(here("data", "3_for_counterfactual", "agriculture", "agriculture.csv")) %>% distinct(x, y, .keep_all=TRUE)
   
   # randomly pick some ag pixels
   ag_sample <- ag[sample(1:nrow(ag),500), ]
   agpoints <- ag_sample %>% dplyr::select(x,y) %>% as.matrix()
   
   # read in counterf pixels
-  counterf <- fread(here("data", "3_for_counterfactual", "training_data", "test", "fveg.csv"))
+  counterf <- fread(here("data", "3_for_counterfactual", "training_data", "test", paste0(dataset, ".csv")))
   
   # get all counterf pixels
-  counterpoints <- counterf %>% dplyr::select(x,y) %>% as.matrix()
+  counterpoints <- counterf %>% dplyr::select(x,y) %>% distinct() %>% as.matrix()
   
   # get the minimum 
   getmindist <- function(i){
