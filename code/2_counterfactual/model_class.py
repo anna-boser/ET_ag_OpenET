@@ -60,7 +60,12 @@ class MyModel():
             hyperparameters = pickle.load(open(self.experiment_path+"/model_parameters.pkl", 'rb')) #rb is read mode. 
             print(hyperparameters, flush=True)
         
+        cols = list(df) + ['fold_size', 'cv_fold', "ET_pred"]
+        cv_df = pd.DataFrame(columns=cols)
+
         for dist in distances: 
+
+            df = df.assign(fold_size=dist)
 
             # I first generate an extra column for my dataset called cv_fold which corresponds to its location
 
@@ -92,12 +97,12 @@ class MyModel():
             end = time.time()
             print("predictions completed; time elapsed: "+str(end-start), flush=True)
 
-            kwargs = {"ET_pred_"+str(dist) : y_pred}
-            df = df.assign(**kwargs)
-            # df = df.assign('ET_pred'=y_pred)
+            df = df.assign(ET_pred=y_pred)
+            cv_df = pd.concat([cv_df, df], axis = 0)
+
         
         # save the full predictions using the spatial CV
-        df.to_csv(self.experiment_path+"/crossval_predictions_" + train_or_test + ".csv", index=False)
+        cv_df.to_csv(self.experiment_path+"/crossval_predictions_" + train_or_test + ".csv", index=False)
         print("crossval predictions saved", flush=True)
 
         return
