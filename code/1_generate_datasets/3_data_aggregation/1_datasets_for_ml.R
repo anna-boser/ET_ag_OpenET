@@ -69,6 +69,9 @@ add_monthgroup <- function(monthgroup, dataset, year){
 
 time_varrying_df <- rbindlist(lapply(months, add_monthgroup, dataset=study_area_df, year="all"))
 
+# filter out NAs for ET 
+time_varrying_df <- filter(time_varrying_df, !is.na(ET))
+
 # save only the agricultural dataset
 ag = time_varrying_df[!is.na(Agriculture)]
 dir.create(directory_path(ag_data_loc))
