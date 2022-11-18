@@ -8,3 +8,4 @@ data/*
 *.Rout
 *.out
 *.sh
+code/2_counterfactual/__pycache__/*
