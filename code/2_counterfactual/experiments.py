@@ -10,9 +10,10 @@ from model_class import MyModel
 from sklearn.ensemble import RandomForestRegressor
 
 # first, define your model 
-model = MyModel(dataset="fveg", 
+model = MyModel(experiment_name="cdl_11-17", 
+                dataset="cdl", 
                 regressor=RandomForestRegressor(n_estimators=100, verbose=1, random_state=0, n_jobs = -1), 
-                experiment_name="exp_fveg_trial", 
+                nans_ok=False,
                 month=True,
                 features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 
                 hparam=False)

@@ -15,7 +15,7 @@ import time
 
 class MyModel():
 
-    def __init__(self, dataset, regressor, experiment_name, month=True, features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], hparam=False):
+    def __init__(self, experiment_name, dataset, regressor, nans_ok=False, month=True, features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], hparam=False):
 
         # locate the natural and agricultural datasets you may want to use
         self.train_data_loc = str(here("data/3_for_counterfactual/training_data/train")) + "/" + dataset + ".csv"
@@ -24,6 +24,7 @@ class MyModel():
         self.ag_data_loc = str(here("data/3_for_counterfactual/agriculture/agriculture.csv"))
 
         self.regressor = regressor
+        self.nans_ok = nans_ok
         self.hparam = hparam
         self.features = features
         self.experiment_name = experiment_name
@@ -44,7 +45,9 @@ class MyModel():
             df = pd.read_csv(self.train_data_loc)
         else:
             df = pd.read_csv(self.test_data_loc)
-        df = df.fillna(-9999)
+        
+        if self.nans_ok == False:
+            df = df.fillna(-9999)
     
         # retrive the features (columns) of interest 
         X = df[self.features]
@@ -117,7 +120,9 @@ class MyModel():
             df = pd.read_csv(self.train_data_loc)
         else:
             df = pd.read_csv(self.test_data_loc)
-        df = df.fillna(-9999)
+
+        if self.nans_ok == False:
+            df = df.fillna(-9999)
 
         # split between predictors and predicted
         X = df[self.features]
@@ -152,7 +157,9 @@ class MyModel():
             df = pd.read_csv(self.ag_data_loc)
         else:
             df = pd.read_csv(self.fallow_data_loc)
-        df = df.fillna(-9999)
+
+        if self.nans_ok == False:
+            df = df.fillna(-9999)
 
         # split between predictors and predicted
         X = df[self.features]
@@ -181,9 +188,10 @@ if __name__ == '__main__':
     from sklearn.ensemble import RandomForestRegressor
 
     # first, define your model 
-    model = MyModel(dataset="cpad", 
+    model = MyModel(experiment_name="exp_cpad_trial", 
+                    dataset="cpad", 
                     regressor=RandomForestRegressor(n_estimators=100, verbose=1, random_state=0, n_jobs = -1), 
-                    experiment_name="exp_cpad_trial", 
+                    nans_ok=False, 
                     month=True,
                     features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 
                     hparam=False)
