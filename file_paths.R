@@ -170,3 +170,10 @@ ag_data_loc <- here("data", "3_for_counterfactual", "agriculture", "agriculture.
 # created in 1_generate_datasets/3_data_aggregation/3_fallow_only.R
 fallow_data_loc <- here("data", "3_for_counterfactual", "agriculture", "fallow.csv")
 
+# path to the distributions of distances between 500 random ag pixels to natural land for the different natural test sets
+# created in 3_analysis/1_additional_data_manipulation/2_ag_natural_distance.R
+distance_distribution_path <- here("data", "4_for_analysis", "distances")
+
+
+
+
