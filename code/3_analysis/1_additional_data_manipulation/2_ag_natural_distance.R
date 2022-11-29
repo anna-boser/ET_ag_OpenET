@@ -10,9 +10,10 @@ library(here)
 library(data.table)
 library(dplyr)
 
+source(here("file_paths.R"))
+
 datasets <- c("fveg", "cpad", "cdl")
 
-distance_distribution_path <- here("data", "4_for_analysis", "distances")
 dir.create(distance_distribution_path)
 
 get_distance <- function(dataset){
