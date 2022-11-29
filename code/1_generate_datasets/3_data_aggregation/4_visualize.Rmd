@@ -1,0 +1,100 @@
+---
+title: "4_visualize"
+author: "Anna Boser"
+date: "2022-11-18"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(data.table)
+library(dplyr)
+library(ggplot2)
+library(sf)
+library(stringr)
+
+source(here("file_paths.R"))
+```
+
+```{r}
+# visualize the train vs test split locations to make sure it's random
+```
+
+```{r}
+ag <- fread(ag_data_loc)
+ag$month <- str_extract(ag$month, '\\b\\w+$') %>% as.numeric()
+fveg <- fread(here(natural_data_path, "fveg.csv"))
+fveg$month <- str_extract(fveg$month, '\\b\\w+$') %>% as.numeric()
+```
+
+```{r}
+# study area
+study_area <- st_read(study_area_loc) %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
+
+filter(fveg) %>%
+  ggplot() + 
+  geom_raster(aes(x=x, y=y, fill=ET)) +
+  facet_wrap(vars(month)) +
+  scale_fill_distiller(palette="Spectral", direction = -1) +
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  theme_classic() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(), 
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+```
+
+```{r}
+filter(ag) %>%
+  ggplot() + 
+  geom_raster(aes(x=x, y=y, fill=ET)) +
+  facet_wrap(vars(month)) +
+  scale_fill_distiller(palette="Spectral", direction = -1) +
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  theme_classic() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(), 
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+```
+
+```{r}
+ag$lct <- "ag"
+fveg$lct <- "natural"
+b <- rbind(ag, fveg)
+b2 <- b %>% group_by(month, lct) %>% summarize(ET = mean(ET, na.rm=TRUE))
+
+ggplot(b2) + 
+  geom_line(aes(x=month, y=ET, color=lct))
+```
+
+```{r}
+openet <- fread("~/Downloads/explore.etdata.org_raster_latlon_[36.92136814432773,-120.89200537651779].csv", sep=",", fill=TRUE)
+openet$date <- as.Date(openet$DateTime)
+openet$month <- month(openet$date) + month(openet$date)%%2
+openet <- openet %>% 
+  group_by(month) %>% 
+  summarize(ET = mean(`DisALEXI ET`/31))
+openet$m <- "openet"
+
+jpl <- fread("~/Downloads/tr-ECO3ETALEXI-001-results.csv")
+jpl$date <- as.Date(jpl$Date)
+jpl$month <- month(jpl$date) + month(jpl$date)%%2
+jpl <- jpl %>% filter(!(ECO3ETALEXI_001_EVAPOTRANSPIRATION_ALEXI_ETdaily>100))%>% 
+  group_by(month) %>% 
+  summarize(ET = mean(ECO3ETALEXI_001_EVAPOTRANSPIRATION_ALEXI_ETdaily)) 
+jpl$m <- "jpl"
+
+b <- rbind(jpl, openet)
+
+ggplot(b)+ 
+  geom_line(aes(x=month, y=ET, col=m))
+
+```
+
