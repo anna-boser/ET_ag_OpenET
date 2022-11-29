@@ -37,7 +37,7 @@ filter(fveg) %>%
   ggplot() + 
   geom_raster(aes(x=x, y=y, fill=ET)) +
   facet_wrap(vars(month)) +
-  scale_fill_distiller(palette="Spectral", direction = -1) +
+  scale_fill_distiller(palette="Spectral", direction = 1) +
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   theme_classic() +
   theme(axis.title.x=element_blank(),
@@ -53,7 +53,7 @@ filter(ag) %>%
   ggplot() + 
   geom_raster(aes(x=x, y=y, fill=ET)) +
   facet_wrap(vars(month)) +
-  scale_fill_distiller(palette="Spectral", direction = -1) +
+  scale_fill_distiller(palette="Spectral", direction = 1) +
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   theme_classic() +
   theme(axis.title.x=element_blank(),
@@ -63,6 +63,49 @@ filter(ag) %>%
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank())
 ```
+
+```{r}
+# visualize the split
+train <- fread(here(natural_data_path, "train", "fveg.csv"))
+train$month <- str_extract(train$month, '\\b\\w+$') %>% as.numeric()
+
+filter(train) %>%
+  ggplot() + 
+  geom_raster(aes(x=x, y=y, fill=ET)) +
+  facet_wrap(vars(month)) +
+  scale_fill_distiller(palette="Spectral", direction = 1) +
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  theme_classic() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(), 
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+```
+
+```{r}
+# visualize the split
+test <- fread(here(natural_data_path, "test", "fveg.csv"))
+test <- test[sample(1:nrow(test),1000000),]
+test$month <- str_extract(test$month, '\\b\\w+$') %>% as.numeric()
+
+filter(test) %>%
+  ggplot() + 
+  geom_raster(aes(x=x, y=y, fill=ET)) +
+  facet_wrap(vars(month)) +
+  scale_fill_distiller(palette="Spectral", direction = 1) +
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  theme_classic() +
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank(), 
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank())
+```
+
+
 
 ```{r}
 ag$lct <- "ag"

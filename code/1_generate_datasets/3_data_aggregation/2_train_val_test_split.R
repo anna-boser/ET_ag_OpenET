@@ -32,8 +32,8 @@ datasets <- c("fveg.csv",
 # condition for inclusion
 check_inc <- function(dim){
   dim <- as.character(dim)
-  last_dec <- substr(dim, nchar(dim), nchar(dim)) %>% as.numeric()
-  (last_dec%%2) == 0
+  second_last_dec <- substr(dim, nchar(dim)-1, nchar(dim)-1) %>% as.numeric() # the last decimal in the latitude direction is not super random
+  (second_last_dec%%2) == 0
 }
 
 # split and save function
