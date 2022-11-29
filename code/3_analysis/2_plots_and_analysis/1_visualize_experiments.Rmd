@@ -12,13 +12,17 @@ library(data.table)
 library(dplyr)
 library(stringr)
 library(ggplot2)
+library(sf)
+library(latex2exp)
+
+source(here("file_paths.R"))
 ```
 
 ```{r}
-experiment_name <- "exp_fveg_trial"
+experiment_name <- "cdl_11-17"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
-dataset <- "fveg"
-months <- TRUE
+dataset <- "cdl"
+months_ts <- TRUE
 ```
 
 # ET over fallow lands vs predictions
@@ -27,7 +31,7 @@ months <- TRUE
 fallow <- fread(here(experiment_path, "fallow.csv"))
 fallow[fallow == -9999] <- NA # this is the na value
 
-if (months){
+if (months_ts){
   # get a nice column of numeric months
   months <- select(fallow, names(fallow)[grepl("month", names(fallow))])
   fallow$month <- names(months)[max.col(months)] 
@@ -37,7 +41,7 @@ if (months){
 
 ### A scatterplot with colors by month
 ```{r}
-if (months){
+if (months_ts){
   # with different months
   r2 <- summary(lm(ET~ET_pred, data=fallow))$r.squared 
   bias <- mean(fallow$ET_pred - fallow$ET, na.rm=TRUE)
@@ -53,7 +57,7 @@ if (months){
 
 ### A scatterplot with months averaged out
 ```{r}
-if (months){
+if (months_ts){
   # averaging over different months
   fallow_year <- fallow %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
                                                          ET_pred = mean(ET_pred, na.rm=TRUE))
@@ -74,7 +78,7 @@ ggplot(fallow_year) +
 
 ### A time series 
 ```{r}
-if (months){
+if (months_ts){
   # plot out the time series
   fallow_ts <- fallow %>% group_by(month) %>% summarize(ET = mean(ET, na.rm=TRUE), 
                                                          ET_pred = mean(ET_pred, na.rm=TRUE))
@@ -106,7 +110,7 @@ Here I just got curious about what ag ET vs fallow ET look like. Seems like fall
 cv <- fread(here(experiment_path, "crossval_predictions_train.csv"))
 cv[cv == -9999] <- NA # this is the na value
 
-if (months){
+if (months_ts){
   # get a nice column of numeric months
   months <- select(cv, names(cv)[grepl("month", names(cv))])
   cv$month <- names(months)[max.col(months)] 
@@ -118,13 +122,13 @@ if (months){
 ## map out the performance of the model as hold out sizes increase
 
 ```{r}
-if (months){
+if (months_ts){
   gridded_cv_metrics <- cv %>% 
     group_by(cv_fold, fold_size, month) %>%
     summarize(ET = mean(ET, na.rm = TRUE), 
               ET_pred = mean(ET_pred, na.rm = TRUE)) %>%
     group_by(cv_fold, fold_size) %>%
-    summarize(r2 = sum(ET_pred - mean(ET), na.rm = TRUE)^2/sum(ET - mean(ET), na.rm = TRUE)^2, 
+    summarize(r2 = 1 - mean((ET_pred - ET)^2)/mean((ET - mean(ET))^2), 
               bias = mean(ET_pred - ET, na.rm = TRUE), 
               rmse = sqrt(mean(ET_pred - ET, na.rm = TRUE)^2), 
               mae = mean(abs((ET_pred - ET)), na.rm = TRUE),
@@ -133,7 +137,7 @@ if (months){
 } else {
   gridded_cv_metrics <- cv %>%
     group_by(cv_fold, fold_size) %>%
-    summarize(r2 = sum(ET_pred - mean(ET), na.rm = TRUE)^2/sum(ET - mean(ET), na.rm = TRUE)^2,
+    summarize(r2 = 1 - mean((ET_pred - ET)^2)/mean((ET - mean(ET))^2),
               bias = mean(ET_pred - ET, na.rm = TRUE),
               rmse = sqrt(mean(ET_pred - ET, na.rm = TRUE)^2),
               mae = mean(abs((ET_pred - ET)), na.rm = TRUE),
@@ -145,8 +149,8 @@ if (months){
 Turn the cv fold back into something meaningful
 ```{r}
 # first turn "fold" into x and y coordinates
-gridded_cv_metrics$x <- as.numeric(str_extract(fold$cv_fold, "[-.0-9]*(?=,)"))
-gridded_cv_metrics$y <- as.numeric(str_extract(fold$cv_fold, "(?<=,)[-.0-9]*"))
+gridded_cv_metrics$x <- as.numeric(str_extract(gridded_cv_metrics$cv_fold, "[-.0-9]*(?=,)"))
+gridded_cv_metrics$y <- as.numeric(str_extract(gridded_cv_metrics$cv_fold, "(?<=,)[-.0-9]*"))
 ```
 
 
@@ -154,7 +158,7 @@ gridded_cv_metrics$y <- as.numeric(str_extract(fold$cv_fold, "(?<=,)[-.0-9]*"))
 # study area
 study_area <- st_read(study_area_loc) %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
 
-filter(gridded_cv_metrics) %>%
+filter(gridded_cv_metrics, fold_size !=1) %>%
   ggplot() + 
   geom_raster(aes(x=x, y=y, fill=rmse)) +
   facet_wrap(vars(fold_size/1000)) +
@@ -188,13 +192,13 @@ if (file.exists(dist_filename)){
 
 
 ```{r}
-if (months){
+if (months_ts){
   cv_metrics <- cv %>% 
-    group_by(fold_size, month) %>%
+    group_by(x, y, fold_size, month) %>%
     summarize(ET = mean(ET, na.rm = TRUE), 
               ET_pred = mean(ET_pred, na.rm = TRUE)) %>%
     group_by(fold_size) %>%
-    summarize(r2 = sum(ET_pred - mean(ET), na.rm = TRUE)^2/sum(ET - mean(ET), na.rm = TRUE)^2, 
+    summarize(r2 = 1 - mean((ET_pred - ET)^2)/mean((ET - mean(ET))^2), 
               bias = mean(ET_pred - ET, na.rm = TRUE), 
               rmse = sqrt(mean(ET_pred - ET, na.rm = TRUE)^2), 
               mae = mean(abs((ET_pred - ET)), na.rm = TRUE),
@@ -203,7 +207,7 @@ if (months){
 } else {
   cv_metrics <- cv %>%
     group_by(fold_size) %>%
-    summarize(r2 = sum(ET_pred - mean(ET), na.rm = TRUE)^2/sum(ET - mean(ET), na.rm = TRUE)^2,
+    summarize(r2 = 1 - mean((ET_pred - ET)^2)/mean((ET - mean(ET))^2),
               bias = mean(ET_pred - ET, na.rm = TRUE),
               rmse = sqrt(mean(ET_pred - ET, na.rm = TRUE)^2),
               mae = mean(abs((ET_pred - ET)), na.rm = TRUE),
@@ -217,7 +221,7 @@ if (months){
 coef = 2/5
 
 ggplot(NULL) + 
-  stat_density(data = dist, aes(x=mindist/1000), fill = "blue") + 
+  stat_density(data = dist, aes(x=mindist/1000), fill = "grey10", alpha = .3) + 
   geom_line(data = cv_metrics, aes(x=fold_size/1000, y = r2*coef), color = "red") +
   geom_point(data = cv_metrics, aes(x=fold_size/1000, y = r2*coef), color = "red") +
   xlab(TeX("Distance of agricultural pixel to nearest natural pixel (km) \n Size of areas left out of model training (km)")) + 
@@ -230,10 +234,10 @@ ggplot(NULL) +
 
 ### Plot the performance for the different months too
 ```{r}
-if (months){
+if (months_ts){
   cv_metrics <- cv %>% 
     group_by(fold_size, month) %>%
-    summarize(r2 = sum(ET_pred - mean(ET), na.rm = TRUE)^2/sum(ET - mean(ET), na.rm = TRUE)^2, 
+    summarize(r2 = 1 - mean((ET_pred - ET)^2)/mean((ET - mean(ET))^2), 
               bias = mean(ET_pred - ET, na.rm = TRUE), 
               rmse = sqrt(mean(ET_pred - ET, na.rm = TRUE)^2), 
               mae = mean(abs((ET_pred - ET)), na.rm = TRUE),
@@ -243,9 +247,9 @@ if (months){
   coef = 2/5
   
   ggplot(NULL) + 
-    stat_density(data = dist, aes(x=mindist/1000), fill = "blue") + 
-    geom_line(data = cv_metrics, aes(x=fold_size/1000, y = r2*coef, color = month)) +
-    geom_point(data = cv_metrics, aes(x=fold_size/1000, y = r2*coef, color = month)) +
+    stat_density(data = dist, aes(x=mindist/1000), fill = "grey10", alpha = .3) + 
+    geom_line(data = cv_metrics, aes(x=fold_size/1000, y = r2*coef, color = as.factor(month))) +
+    geom_point(data = cv_metrics, aes(x=fold_size/1000, y = r2*coef, color = as.factor(month))) +
     xlab(TeX("Distance of agricultural pixel to nearest natural pixel (km) \n Size of areas left out of model training (km)")) + 
     theme_bw() + 
     theme(axis.title.x = element_text(vjust=-2.5)) +
@@ -263,11 +267,12 @@ mean_dist <- mean(dist$mindist)
 folds <- unique(cv$fold_size)
 best_fold <- folds[abs(folds-(2*mean_dist)) == min(abs(folds-(2*mean_dist)))]
 cv_best_fold <- filter(cv, fold_size == best_fold)
+print(cv_best_fold)
 ```
 
 ### A scatterplot with colors by month
 ```{r}
-if (months){
+if (months_ts){
   # with different months
   r2 <- summary(lm(ET~ET_pred, data=cv_best_fold))$r.squared 
   bias <- mean(cv_best_fold$ET_pred - cv_best_fold$ET, na.rm=TRUE)
@@ -275,7 +280,7 @@ if (months){
     geom_jitter(aes(x=ET_pred, y=ET, color=as.factor(month)), alpha=0.2, size =.1) + 
     theme_classic() + 
     geom_abline(intercept=0,slope=1, color="red") + 
-    annotate("text", x=4, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
+    annotate("text", x=4.5, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
     xlab("Predicted natural ET (mm/day)") + 
     ylab("Observed fallow ET (mm/day)")
   }
@@ -283,7 +288,7 @@ if (months){
 
 ### A scatterplot with months averaged out
 ```{r}
-if (months){
+if (months_ts){
   # averaging over different months
   cv_best_fold_year <- cv_best_fold %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
                                                          ET_pred = mean(ET_pred, na.rm=TRUE))
@@ -297,14 +302,14 @@ ggplot(cv_best_fold_year) +
   geom_jitter(aes(x=ET_pred, y=ET), alpha=0.2, size =.1) + 
   theme_classic() + 
   geom_abline(intercept=0,slope=1, color="red") + 
-  annotate("text", x=3, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
+  annotate("text", x=4.5, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
   xlab("Predicted natural ET (mm/day)") + 
   ylab("Observed fallow ET (mm/day)")
 ```
 
 ### A time series 
 ```{r}
-if (months){
+if (months_ts){
   # plot out the time series
   cv_best_fold_ts <- cv_best_fold %>% group_by(month) %>% summarize(ET = mean(ET, na.rm=TRUE), 
                                                          ET_pred = mean(ET_pred, na.rm=TRUE))
