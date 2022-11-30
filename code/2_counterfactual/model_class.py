@@ -43,8 +43,11 @@ class MyModel():
         # retrieve the dataset to crossvalidate over
         if train_or_test=="train":
             df = pd.read_csv(self.train_data_loc)
-        else:
+        elif train_or_test=="test":
             df = pd.read_csv(self.test_data_loc)
+        else: 
+            Exception("train_or_test must be 'train' or 'test'")
+
         
         if self.nans_ok == False:
             df = df.fillna(-9999)
@@ -155,8 +158,10 @@ class MyModel():
         # are you predicting over all agriculture or only fallow lands? 
         if ag_or_fallow=="agriculture":
             df = pd.read_csv(self.ag_data_loc)
-        else:
+        elif ag_or_fallow=="fallow":
             df = pd.read_csv(self.fallow_data_loc)
+        else: 
+            Exception("ag_or_fallow must be 'agriculture' or 'fallow'")
 
         if self.nans_ok == False:
             df = df.fillna(-9999)
