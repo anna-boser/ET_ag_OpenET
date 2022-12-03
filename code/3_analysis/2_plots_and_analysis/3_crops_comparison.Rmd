@@ -1,0 +1,293 @@
+---
+title: "crops comparison"
+author: "Anna Boser"
+date: '2022-05-05'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sp)
+library(here)
+library(stringr)
+library(sf)
+library(tmap)
+library(data.table)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(latex2exp)
+library(lfe)
+library(gstat)
+
+source(here("file_paths.R"))
+```
+
+```{r}
+avg_irr <- 1.97 # irrigation efficiency in mm/day spread over the year (mm/day)
+```
+
+## Read in the data
+```{r}
+experiment_name <- "fveg_11-29_rf"
+experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+months_ts <- TRUE
+```
+
+```{r}
+data <- fread(file = here(experiment_path, "agriculture.csv"))
+
+data[data == -9999] <- NA # this is the na value
+
+if (months_ts){
+  # get a nice column of numeric months
+  months <- select(data, names(data)[grepl("month", names(data))])
+  data$month <- names(months)[max.col(months)] 
+  data$month <- str_extract(data$month, '\\b\\w+$') %>% as.numeric()
+}
+```
+
+```{r}
+if (months_ts == TRUE){
+  # Average over monthgroups
+  data <- fallow %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
+                                                  ET_pred = mean(ET_pred, na.rm=TRUE), 
+                                                  ag_ET = ET-ET_pred)
+}
+```
+
+# add county and crop type information 
+```{r}
+data$x <- round(data$x, 7)
+data$y <- round(data$y, 7)
+
+# add_crops
+crops <- fread(crops_table_loc)
+crops$cell <- NULL
+crops$x <- round(crops$x, 7)
+crops$y <- round(crops$y, 7)
+
+data <- merge(data, crops, by = c("x", "y"), all.x=TRUE)
+
+# add counties
+counties <- fread(county_table_loc)
+counties$cell <- NULL
+counties$x <- round(counties$x, 7)
+counties$y <- round(counties$y, 7)
+data <- merge(data, couties, by = c("x", "y"), all.x=TRUE)
+```
+
+
+Check how water use varies by crop
+```{r}
+bardata = data %>% 
+  pivot_longer(cols=c(ET, ET_pred, ag_ET), names_to="type", values_to="ET") %>%
+  group_by(cropnames, type) %>%
+  summarize(sd = sd(ET, na.rm = TRUE), 
+            ET = mean(ET, na.rm = TRUE)) 
+
+bardata$type <- factor(bardata$type, levels=c("ET", "ET_pred", "ag_ET"))
+```
+
+Get confidence intervals using clustered standard errors
+
+```{r}
+# plot a variogram 
+# spdf <- SpatialPointsDataFrame(coords = select(data, x, y), data = select(data, -x, -y))
+sample <- data[sample(nrow(data), size = 100000, replace = FALSE),] #subset data to calculate variogram
+sample$x <- (sample$x - min(sample$x))*89  # turn x into km 
+sample$y <- (sample$y - min(sample$y))*111
+
+vario_ET <- variogram(ET~1, data=sample, locations= ~x+y, cutoff= 30) # cutoff at 20 because I don't really care what happens past 20 km
+vario_ag_ET <- variogram(ag_ET~1, data=sample, locations= ~x+y, cutoff= 30) # cutoff at 20 because I don't really care what happens past 20 km
+
+vario_ET$type = "Observed ET"
+vario_ag_ET$type = "Agricultural ET"
+
+vario_ET2 <- rbind(vario_ET, vario_ag_ET)
+```
+
+```{r}
+ggplot(vario_ET2) + 
+  geom_line(aes(x = dist, y = gamma, color = type)) + 
+  geom_point(aes(x = dist, y = gamma, color = type)) + 
+  scale_color_manual(values=c("seagreen", "navyblue")) + 
+  theme_classic() + 
+  theme(legend.position = c(.2, .85), 
+        legend.title=element_blank()) + 
+  xlab("Distance (km)") + 
+  ylab("Gamma")
+  
+```
+
+
+```{r}
+# create clusters based on location. Function creates clusters of size dist km. 
+assign_cluster <- function(x, y, dist){
+  
+  x_size = dist/89 # 1 degree lon (x) = 89km = 89000m
+  y_size = dist/111 # 1 degree lat (y) = 111km = 111000m
+  
+  x_fold = floor(x/x_size)*x_size
+  y_fold = floor(y/y_size)*y_size
+  
+  cv_fold = paste(x_fold, y_fold, sep = ",")
+  
+  return(cv_fold)
+}
+
+data$cluster20 <- mapply(assign_cluster, data$x, data$y, 20)
+```
+
+
+```{r}
+# get confidence intervals using clustered standard errors
+ET_20 <- felm(ET~cropnames-1 | 0 | 0 | cluster20, data) # -1 mean no intercept
+ag_ET_20 <- felm(ag_ET~cropnames-1 | 0 | 0 | cluster20, data)
+ET_pred_20 <- felm(ET_pred~cropnames-1 | 0 | 0 | cluster20, data)
+```
+
+```{r}
+# extract the mean and ci values from each
+df_from_felm <- function(input_lm){
+  ET_df <- as.data.frame(cbind(input_lm$coefficients, input_lm$cse))
+  colnames(ET_df) <- c("ET", "se")
+  ET_df$min <- ET_df$ET-(2*ET_df$se)
+  ET_df$max <- ET_df$ET+(2*ET_df$se)
+  ET_df$cropnames <- substring(rownames(ET_df), 10)
+  return(ET_df)
+}
+
+ET_df <- df_from_felm(ET_20)
+ag_ET_df <- df_from_felm(ag_ET_20)
+ET_pred_df <- df_from_felm(ET_pred_20)
+```
+
+### Calculate some statistics 
+
+```{r}
+felm(ET~cropnames | 0 | 0 | cluster20, data) %>% summary()
+felm(ag_ET~cropnames | 0 | 0 | cluster20, data) %>% summary()
+felm(ET_pred~cropnames | 0 | 0 | cluster20, data) %>% summary()
+```
+
+```{r}
+#percent of total ET that is ag water consumption
+total_ET <- mean(filter(data, cropnames != "Fallow or idle")$ET)
+ag_ET_mean <- felm(ag_ET~1 | 0 | 0 | cluster20, filter(data, cropnames != "Fallow or idle"))
+upper <- (ag_ET_mean$coefficients[1] + 2*ag_ET_mean$cse)/total_ET
+mean <- (ag_ET_mean$coefficients[1])/total_ET
+lower <- (ag_ET_mean$coefficients[1] - 2*ag_ET_mean$cse)/total_ET
+paste(upper, mean, lower)
+```
+
+```{r}
+# percent difference between grain and rice
+ag_ET_df["cropnamesGrain and hay crops", "ET"]/ag_ET_df["cropnamesRice", "ET"]
+```
+
+```{r}
+# percent increase from ET over grains to rice
+(ET_df["cropnamesRice", "ET"]-ET_df["cropnamesGrain and hay crops", "ET"])/ET_df["cropnamesGrain and hay crops", "ET"]
+# percent increase from ag water consumption over grains to rice
+(ag_ET_df["cropnamesRice", "ET"]-ag_ET_df["cropnamesGrain and hay crops", "ET"])/ag_ET_df["cropnamesGrain and hay crops", "ET"]
+```
+
+
+### Plot
+```{r}
+# get percent of the observed ET that is agricultural water consumption
+percent <- filter(bardata, type != "ET_pred")
+percent <- percent %>% pivot_wider(names_from = "type", values_from = "ET")
+percent$percent <- paste0(as.character(round(percent$ag_ET/percent$ET, 2)*100), "%")
+```
+
+```{r}
+bardata2 <- filter(bardata, type != "ET")
+
+ggplot(ag_ET_df, aes(x = reorder(cropnames, ET))) + 
+  geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
+  geom_col(data = bardata2, aes(y = ET, fill = type), alpha = .6) +
+  scale_fill_manual(values=c("goldenrod4", "seagreen"), labels = c("Simulated natural ET", "Agricultural ET")) + 
+  geom_col(data = filter(bardata, type == "ET"), aes(y = ET, color = type), alpha = 0) +
+  scale_color_manual(values=c("navyblue"), labels = c("Observed ET")) + 
+  geom_linerange(data = ET_df, aes(ymax = min, ymin = max), color = "navyblue") + 
+  geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
+  ylab("mm/day") + 
+  theme_classic() + 
+  labs(fill='') + 
+  geom_hline(yintercept = avg_irr, linetype = "dotted", color = "red", size = "0.5") + 
+  annotate("text", x="Grain and hay crops", y=avg_irr + .25, label= "Average water diverted for irrigation") + 
+  theme(axis.text.x = element_text(angle = 30, hjust=1), 
+        axis.title.x=element_blank(), 
+        axis.ticks.x=element_blank(), 
+        legend.position = "top", 
+        legend.direction="horizontal", 
+        legend.title=element_blank()) # + 
+  # geom_text(data = percent, aes(y = ET, label = percent), vjust = -1.7)
+```
+
+California’s irrigated pasturelands—including valley, foothill, and mountain meadow pastures— account for nearly 500,000 acres across the state, and ranks third among agricultural water users. https://rangelands.ucdavis.edu/ipep/
+
+Sd vs water use scatterplot
+```{r}
+# bardata_ag_ET = filter(bardata, type == "ag_ET")#, cropnames != "Fallow or idle") 
+# 
+# bardata_ag_ET%>% 
+#   ggplot() + 
+#   geom_point(aes(x = ET, y = sd, color = cropnames))
+# 
+# lm(sd~ET, data = bardata_ag_ET) %>% summary()
+```
+
+```{r}
+bardata_ag_ET = filter(bardata, type == "ag_ET")#, cropnames != "Fallow or idle") 
+# bardata_ag_ET <- bardata_ag_ET %>% pivot_longer(cols=c("sd", "ET"))
+```
+
+
+sd barplot
+```{r}
+
+ggplot(bardata_ag_ET, aes(x = reorder(cropnames, ET))) + 
+  geom_col(aes(y = ET, fill = "Agricultural ET"), alpha = 0.6) + 
+  scale_fill_manual(values=c("seagreen"), labels = c("Agricultural ET")) + 
+  geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
+  # geom_point(aes(y = sd, color = "Standard deviation")) + 
+  # scale_color_manual(values=c("black"), labels = c("Standard deviation")) + 
+  theme_classic() + 
+  labs(fill='') + 
+  ylab("mm/day") + 
+  theme(axis.text.x = element_text(angle = 30, hjust=1), 
+        axis.title.x=element_blank(), 
+        axis.ticks.x=element_blank(), 
+        legend.position = "top", 
+        legend.direction="horizontal", 
+        legend.title=element_blank()) 
+```
+```{r}
+
+ggplot(bardata_ag_ET, aes(x = reorder(cropnames, ET))) + 
+  geom_col(aes(y = ET, fill = "Agricultural ET"), alpha = 0.6) + 
+  scale_fill_manual(values=c("seagreen"), labels = c("Agricultural ET")) + 
+  geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
+  geom_point(aes(y = sd, color = "Standard deviation")) + 
+  scale_color_manual(values=c("black"), labels = c("Standard deviation")) + 
+  theme_classic() + 
+  labs(fill='') + 
+  ylab("mm/day") + 
+  theme(axis.text.x = element_text(angle = 30, hjust=1), 
+        axis.title.x=element_blank(), 
+        axis.ticks.x=element_blank(), 
+        legend.position = "top", 
+        legend.direction="horizontal", 
+        legend.title=element_blank()) 
+```
+
+regressions to see how much is explained by crops and crops+climate
+```{r}
+felm(ag_ET~cropnames | 0 | 0 | cluster20, data) %>% summary()
+felm(ag_ET~cropnames+PET | 0 | 0 | cluster20, data) %>% summary()
+felm(ag_ET~cropnames+ET_pred | 0 | 0 | cluster20, data) %>% summary()
+```
+
