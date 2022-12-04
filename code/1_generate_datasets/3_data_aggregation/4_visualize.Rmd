@@ -87,7 +87,7 @@ filter(train) %>%
 ```{r}
 # visualize the split
 test <- fread(here(natural_data_path, "test", "fveg.csv"))
-test <- test[sample(1:nrow(test),1000000),]
+# test <- test[sample(1:nrow(test),1000000),]
 test$month <- str_extract(test$month, '\\b\\w+$') %>% as.numeric()
 
 filter(test) %>%

@@ -19,9 +19,9 @@ source(here("file_paths.R"))
 ```
 
 ```{r}
-experiment_name <- "cdl_11-17"
+experiment_name <- "fveg_11-29_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
-dataset <- "cdl"
+dataset <- "fveg"
 months_ts <- TRUE
 ```
 
@@ -117,6 +117,7 @@ if (months_ts){
   cv$month <- str_extract(cv$month, '\\b\\w+$') %>% as.numeric()
 }
 
+cv$mean_dist <- cv$fold_size/6 # the average distance between a held out point and the border to the hold out
 ```
 
 ## map out the performance of the model as hold out sizes increase
@@ -124,7 +125,7 @@ if (months_ts){
 ```{r}
 if (months_ts){
   gridded_cv_metrics <- cv %>% 
-    group_by(cv_fold, fold_size, month) %>%
+    group_by(x, y, cv_fold, fold_size) %>%
     summarize(ET = mean(ET, na.rm = TRUE), 
               ET_pred = mean(ET_pred, na.rm = TRUE)) %>%
     group_by(cv_fold, fold_size) %>%
@@ -155,14 +156,16 @@ gridded_cv_metrics$y <- as.numeric(str_extract(gridded_cv_metrics$cv_fold, "(?<=
 
 
 ```{r}
-# study area
+# study area and counties for plotting
 study_area <- st_read(study_area_loc) %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
+counties <- st_read(counties_loc) %>% filter(STATEFP == "06") %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
 
 filter(gridded_cv_metrics, fold_size !=1) %>%
   ggplot() + 
+  geom_sf(data = counties, color=alpha("white",1), size = .2) + 
   geom_raster(aes(x=x, y=y, fill=rmse)) +
   facet_wrap(vars(fold_size/1000)) +
-  scale_fill_distiller(palette="Spectral", direction = -1, limits = c(0,2)) +
+  scale_fill_distiller(palette="Spectral", direction = -1) + #, limits = c(0,2)) +
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   theme_classic() +
   theme(axis.title.x=element_blank(),
@@ -177,12 +180,12 @@ filter(gridded_cv_metrics, fold_size !=1) %>%
 
 First get the distribution of distances between ag and natural data (specifically the test data)
 ```{r}
-library(parallel)
-library(tictoc)
-
 dist_filename <- here(distance_distribution_path, paste0(dataset, ".csv"))
 
 if (file.exists(dist_filename)){
+  library(parallel)
+  library(tictoc)
+  
   dist <- fread(dist_filename)
 } else {
   stop('No distance file for this dataset. Make one using 3_analysis/1_additional_data_manipulation/2_ag_natural_distance.R')
@@ -194,10 +197,10 @@ if (file.exists(dist_filename)){
 ```{r}
 if (months_ts){
   cv_metrics <- cv %>% 
-    group_by(x, y, fold_size, month) %>%
+    group_by(x, y, fold_size, mean_dist) %>%
     summarize(ET = mean(ET, na.rm = TRUE), 
               ET_pred = mean(ET_pred, na.rm = TRUE)) %>%
-    group_by(fold_size) %>%
+    group_by(fold_size, mean_dist) %>%
     summarize(r2 = 1 - mean((ET_pred - ET)^2)/mean((ET - mean(ET))^2), 
               bias = mean(ET_pred - ET, na.rm = TRUE), 
               rmse = sqrt(mean(ET_pred - ET, na.rm = TRUE)^2), 
@@ -206,7 +209,7 @@ if (months_ts){
               ET_pred = mean(ET_pred, na.rm = TRUE))
 } else {
   cv_metrics <- cv %>%
-    group_by(fold_size) %>%
+    group_by(fold_size, mean_dist) %>%
     summarize(r2 = 1 - mean((ET_pred - ET)^2)/mean((ET - mean(ET))^2),
               bias = mean(ET_pred - ET, na.rm = TRUE),
               rmse = sqrt(mean(ET_pred - ET, na.rm = TRUE)^2),
@@ -222,9 +225,9 @@ coef = 2/5
 
 ggplot(NULL) + 
   stat_density(data = dist, aes(x=mindist/1000), fill = "grey10", alpha = .3) + 
-  geom_line(data = cv_metrics, aes(x=fold_size/1000, y = r2*coef), color = "red") +
-  geom_point(data = cv_metrics, aes(x=fold_size/1000, y = r2*coef), color = "red") +
-  xlab(TeX("Distance of agricultural pixel to nearest natural pixel (km) \n Size of areas left out of model training (km)")) + 
+  geom_line(data = cv_metrics, aes(x=mean_dist/1000, y = r2*coef), color = "red") +
+  geom_point(data = cv_metrics, aes(x=mean_dist/1000, y = r2*coef), color = "red") +
+  xlab(TeX("Distance of agricultural pixel to nearest natural pixel (km) \n Average distance of point to border of hold-out (km)")) + 
   theme_bw() + 
   theme(axis.title.x = element_text(vjust=-2.5)) +
   scale_y_continuous(
@@ -236,7 +239,7 @@ ggplot(NULL) +
 ```{r}
 if (months_ts){
   cv_metrics <- cv %>% 
-    group_by(fold_size, month) %>%
+    group_by(fold_size, month, mean_dist) %>%
     summarize(r2 = 1 - mean((ET_pred - ET)^2)/mean((ET - mean(ET))^2), 
               bias = mean(ET_pred - ET, na.rm = TRUE), 
               rmse = sqrt(mean(ET_pred - ET, na.rm = TRUE)^2), 
@@ -248,9 +251,9 @@ if (months_ts){
   
   ggplot(NULL) + 
     stat_density(data = dist, aes(x=mindist/1000), fill = "grey10", alpha = .3) + 
-    geom_line(data = cv_metrics, aes(x=fold_size/1000, y = r2*coef, color = as.factor(month))) +
-    geom_point(data = cv_metrics, aes(x=fold_size/1000, y = r2*coef, color = as.factor(month))) +
-    xlab(TeX("Distance of agricultural pixel to nearest natural pixel (km) \n Size of areas left out of model training (km)")) + 
+    geom_line(data = cv_metrics, aes(x=mean_dist/1000, y = r2*coef, color = as.factor(month))) +
+    geom_point(data = cv_metrics, aes(x=mean_dist/1000, y = r2*coef, color = as.factor(month))) +
+    xlab(TeX("Distance of agricultural pixel to nearest natural pixel (km) \n Average distance of point to border of hold-out (km)")) + 
     theme_bw() + 
     theme(axis.title.x = element_text(vjust=-2.5)) +
     scale_y_continuous(
@@ -264,9 +267,9 @@ if (months_ts){
 Make these using the CV with the fold size that is closest to the double of the mean distance between ag and natural (a bit conservative but only slightly)
 ```{r}
 mean_dist <- mean(dist$mindist)
-folds <- unique(cv$fold_size)
-best_fold <- folds[abs(folds-(2*mean_dist)) == min(abs(folds-(2*mean_dist)))]
-cv_best_fold <- filter(cv, fold_size == best_fold)
+folds <- unique(cv$mean_dist)
+best_fold <- folds[abs(folds-(mean_dist)) == min(abs(folds-(mean_dist)))]
+cv_best_fold <- filter(cv, mean_dist == best_fold)
 print(cv_best_fold)
 ```
 
@@ -280,10 +283,12 @@ if (months_ts){
     geom_jitter(aes(x=ET_pred, y=ET, color=as.factor(month)), alpha=0.2, size =.1) + 
     theme_classic() + 
     geom_abline(intercept=0,slope=1, color="red") + 
-    annotate("text", x=4.5, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
+    # annotate("text", x=4.5, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
     xlab("Predicted natural ET (mm/day)") + 
     ylab("Observed fallow ET (mm/day)")
-  }
+}
+
+print(paste("R2:", round(r2, 3), "Bias:", round(bias, 3)))
 ```
 
 ### A scatterplot with months averaged out
@@ -299,12 +304,17 @@ if (months_ts){
 r2 <- summary(lm(ET~ET_pred, data=cv_best_fold_year))$r.squared 
 bias <- mean(cv_best_fold_year$ET_pred - cv_best_fold_year$ET, na.rm=TRUE)
 ggplot(cv_best_fold_year) +
-  geom_jitter(aes(x=ET_pred, y=ET), alpha=0.2, size =.1) + 
+  # stat_density_2d(aes(x=ET_pred, y=ET,fill = stat(density)), geom = 'raster', contour = FALSE) + 
+  # scale_fill_viridis_c() +
+  geom_jitter(aes(x=ET_pred, y=ET), alpha=0.01, size =.01, color = 'black') +
+  theme(legend.position="none") + 
   theme_classic() + 
   geom_abline(intercept=0,slope=1, color="red") + 
-  annotate("text", x=4.5, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
+  # annotate("text", x=4.5, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
   xlab("Predicted natural ET (mm/day)") + 
   ylab("Observed fallow ET (mm/day)")
+
+print(paste("R2:", round(r2, 3), "Bias:", round(bias, 3)))
 ```
 
 ### A time series 
