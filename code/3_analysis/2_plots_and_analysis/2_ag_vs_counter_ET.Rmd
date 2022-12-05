@@ -44,7 +44,7 @@ if (months_ts){
 ```{r}
 if (months_ts == TRUE){
   # Average over monthgroups
-  data <- fallow %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
+  data <- data %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
                                                   ET_pred = mean(ET_pred, na.rm=TRUE), 
                                                   ag_ET = ET-ET_pred)
 }

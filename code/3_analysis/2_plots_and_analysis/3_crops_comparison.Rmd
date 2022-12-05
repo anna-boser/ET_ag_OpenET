@@ -29,7 +29,7 @@ avg_irr <- 1.97 # irrigation efficiency in mm/day spread over the year (mm/day)
 
 ## Read in the data
 ```{r}
-experiment_name <- "fveg_11-29_rf"
+experiment_name <- "fveg_11-30_gb_test_set"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 months_ts <- TRUE
 ```
@@ -50,7 +50,7 @@ if (months_ts){
 ```{r}
 if (months_ts == TRUE){
   # Average over monthgroups
-  data <- fallow %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
+  data <- data %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
                                                   ET_pred = mean(ET_pred, na.rm=TRUE), 
                                                   ag_ET = ET-ET_pred)
 }
@@ -68,19 +68,21 @@ crops$x <- round(crops$x, 7)
 crops$y <- round(crops$y, 7)
 
 data <- merge(data, crops, by = c("x", "y"), all.x=TRUE)
+data$cropnames <- ifelse(data$cropnames == "Unclassified fallow", "Fallow or idle", data$cropnames) # rename unclassified fallow to just fallow
 
 # add counties
 counties <- fread(county_table_loc)
 counties$cell <- NULL
 counties$x <- round(counties$x, 7)
 counties$y <- round(counties$y, 7)
-data <- merge(data, couties, by = c("x", "y"), all.x=TRUE)
+data <- merge(data, counties, by = c("x", "y"), all.x=TRUE)
 ```
 
 
 Check how water use varies by crop
 ```{r}
 bardata = data %>% 
+  filter(!is.na(cropnames)) %>%
   pivot_longer(cols=c(ET, ET_pred, ag_ET), names_to="type", values_to="ET") %>%
   group_by(cropnames, type) %>%
   summarize(sd = sd(ET, na.rm = TRUE), 
@@ -216,8 +218,8 @@ ggplot(ag_ET_df, aes(x = reorder(cropnames, ET))) +
   ylab("mm/day") + 
   theme_classic() + 
   labs(fill='') + 
-  geom_hline(yintercept = avg_irr, linetype = "dotted", color = "red", size = "0.5") + 
-  annotate("text", x="Grain and hay crops", y=avg_irr + .25, label= "Average water diverted for irrigation") + 
+  geom_hline(yintercept = avg_irr, linetype = "dotted", color = "darkred", size = 0.5) + 
+  annotate("text", x="Vineyards", y=avg_irr + .2, label= "Mean water diverted for irrigation", color = 'darkred') + 
   theme(axis.text.x = element_text(angle = 30, hjust=1), 
         axis.title.x=element_blank(), 
         axis.ticks.x=element_blank(), 
@@ -225,6 +227,26 @@ ggplot(ag_ET_df, aes(x = reorder(cropnames, ET))) +
         legend.direction="horizontal", 
         legend.title=element_blank()) # + 
   # geom_text(data = percent, aes(y = ET, label = percent), vjust = -1.7)
+
+ggplot(ag_ET_df, aes(x = reorder(cropnames, ET))) + 
+  geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
+  geom_col(data = bardata2, aes(y = ET, fill = type), alpha = .6) +
+  scale_fill_manual(values=c("goldenrod4", "seagreen"), labels = c("Simulated natural ET", "Agricultural ET")) + 
+  geom_col(data = filter(bardata, type == "ET"), aes(y = ET, color = type), alpha = 0) +
+  scale_color_manual(values=c("navyblue"), labels = c("Observed ET")) + 
+  geom_linerange(data = ET_df, aes(ymax = min, ymin = max), color = "navyblue") + 
+  geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
+  ylab("mm/day") + 
+  theme_classic() + 
+  labs(fill='') + 
+#  geom_hline(yintercept = avg_irr, linetype = "dotted", color = "darkred", size = 0.5) + 
+#  annotate("text", x="Vineyards", y=avg_irr + .2, label= "Mean water diverted for irrigation", color = 'darkred') + 
+  theme(axis.text.x = element_text(angle = 30, hjust=1), 
+        axis.title.x=element_blank(), 
+        axis.ticks.x=element_blank(), 
+        legend.position = "top", 
+        legend.direction="horizontal", 
+        legend.title=element_blank())
 ```
 
 California’s irrigated pasturelands—including valley, foothill, and mountain meadow pastures— account for nearly 500,000 acres across the state, and ranks third among agricultural water users. https://rangelands.ucdavis.edu/ipep/
