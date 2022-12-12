@@ -47,6 +47,7 @@ if (months_ts){
 }
 ```
 
+## average over months
 ```{r}
 if (months_ts == TRUE){
   # Average over monthgroups
@@ -56,7 +57,7 @@ if (months_ts == TRUE){
 }
 ```
 
-# add county and crop type information 
+# add crop type information 
 ```{r}
 data$x <- round(data$x, 7)
 data$y <- round(data$y, 7)
@@ -68,14 +69,7 @@ crops$x <- round(crops$x, 7)
 crops$y <- round(crops$y, 7)
 
 data <- merge(data, crops, by = c("x", "y"), all.x=TRUE)
-data$cropnames <- ifelse(data$cropnames == "Unclassified fallow", "Fallow or idle", data$cropnames) # rename unclassified fallow to just fallow
-
-# add counties
-counties <- fread(county_table_loc)
-counties$cell <- NULL
-counties$x <- round(counties$x, 7)
-counties$y <- round(counties$y, 7)
-data <- merge(data, counties, by = c("x", "y"), all.x=TRUE)
+data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow or idle", data$cropnames) # rename unclassified fallow to just fallow
 ```
 
 
@@ -209,13 +203,13 @@ bardata2 <- filter(bardata, type != "ET")
 
 ggplot(ag_ET_df, aes(x = reorder(cropnames, ET))) + 
   geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
-  geom_col(data = bardata2, aes(y = ET, fill = type), alpha = .6) +
+  geom_col(data = bardata2, aes(y = ET*36.5, fill = type), alpha = .6) +
   scale_fill_manual(values=c("goldenrod4", "seagreen"), labels = c("Simulated natural ET", "Agricultural ET")) + 
   geom_col(data = filter(bardata, type == "ET"), aes(y = ET, color = type), alpha = 0) +
   scale_color_manual(values=c("navyblue"), labels = c("Observed ET")) + 
   geom_linerange(data = ET_df, aes(ymax = min, ymin = max), color = "navyblue") + 
   geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
-  ylab("mm/day") + 
+  ylab("cm/year") + 
   theme_classic() + 
   labs(fill='') + 
   geom_hline(yintercept = avg_irr, linetype = "dotted", color = "darkred", size = 0.5) + 
@@ -230,13 +224,13 @@ ggplot(ag_ET_df, aes(x = reorder(cropnames, ET))) +
 
 ggplot(ag_ET_df, aes(x = reorder(cropnames, ET))) + 
   geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
-  geom_col(data = bardata2, aes(y = ET, fill = type), alpha = .6) +
+  geom_col(data = bardata2, aes(y = ET*36.5, fill = type), alpha = .6) +
   scale_fill_manual(values=c("goldenrod4", "seagreen"), labels = c("Simulated natural ET", "Agricultural ET")) + 
   geom_col(data = filter(bardata, type == "ET"), aes(y = ET, color = type), alpha = 0) +
   scale_color_manual(values=c("navyblue"), labels = c("Observed ET")) + 
   geom_linerange(data = ET_df, aes(ymax = min, ymin = max), color = "navyblue") + 
   geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
-  ylab("mm/day") + 
+  ylab("cm/year") + 
   theme_classic() + 
   labs(fill='') + 
 #  geom_hline(yintercept = avg_irr, linetype = "dotted", color = "darkred", size = 0.5) + 
@@ -312,4 +306,3 @@ felm(ag_ET~cropnames | 0 | 0 | cluster20, data) %>% summary()
 felm(ag_ET~cropnames+PET | 0 | 0 | cluster20, data) %>% summary()
 felm(ag_ET~cropnames+ET_pred | 0 | 0 | cluster20, data) %>% summary()
 ```
-
