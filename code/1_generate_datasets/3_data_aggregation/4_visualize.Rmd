@@ -66,7 +66,7 @@ filter(ag) %>%
 
 ```{r}
 # visualize the split
-train <- fread(here(natural_data_path, "train", "fveg.csv"))
+train <- fread(here(natural_data_path, "training_data", "fveg.csv"))
 train$month <- str_extract(train$month, '\\b\\w+$') %>% as.numeric()
 
 filter(train) %>%
@@ -112,10 +112,17 @@ ag$lct <- "ag"
 fveg$lct <- "natural"
 b <- rbind(ag, fveg)
 b2 <- b %>% group_by(month, lct) %>% summarize(ET = mean(ET, na.rm=TRUE))
-
-ggplot(b2) + 
-  geom_line(aes(x=month, y=ET, color=lct))
 ```
+```{r}
+ggplot(b2) + 
+  geom_line(aes(x=month, y=ET, color=lct)) + 
+  scale_color_manual(values=c("navyblue", "goldenrod4")) +
+  theme_classic() + 
+  ylab("ET (mm/day)") + 
+  xlab("Month") +
+  theme(legend.position = "none")
+```
+
 
 ```{r}
 openet <- fread("~/Downloads/explore.etdata.org_raster_latlon_[36.92136814432773,-120.89200537651779].csv", sep=",", fill=TRUE)
