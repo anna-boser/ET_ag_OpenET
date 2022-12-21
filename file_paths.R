@@ -179,3 +179,6 @@ distance_distribution_path <- here("data", "4_for_analysis", "distances")
 # 2010: https://waterdata.usgs.gov/ca/nwis/water_use?wu_year=2010&wu_area=County&wu_county=ALL&wu_category=IC&submitted_form=introduction&wu_county_nms=--ALL+Counties--&wu_category_nms=Irrigation%2C+Crop
 usgs_irr_path <- here("data", "1_raw", "USGS_waterdata")
 
+# CalSIMETAW water use comparisons
+# https://data.ca.gov/dataset/cal-simetaw-unit-values
+calsimetaw_loc <- here("data", "1_raw", "CalSIMETAW", "calsimetaw.csv")
