@@ -182,3 +182,9 @@ usgs_irr_path <- here("data", "1_raw", "USGS_waterdata")
 # CalSIMETAW water use comparisons
 # https://data.ca.gov/dataset/cal-simetaw-unit-values
 calsimetaw_loc <- here("data", "1_raw", "CalSIMETAW", "calsimetaw.csv")
+
+# USDA/NASS crop stats
+# https://www.nass.usda.gov/Quick_Stats/Ag_Overview/stateOverview.php?state=CALIFORNIA
+# manual changes to remove subcategory information/turn into csv
+crop_value_loc <- here("data", "1_raw", "USDA_NASS_State_of_Ag", "crop_value.csv")
+
