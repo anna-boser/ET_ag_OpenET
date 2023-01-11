@@ -8,11 +8,12 @@
 
 from model_class import MyModel
 from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import HistGradientBoostingRegressor
 
 # first, define your model 
-model = MyModel(experiment_name="cdl_11-17", 
-                dataset="cdl", 
-                regressor=RandomForestRegressor(n_estimators=100, verbose=1, random_state=0, n_jobs = -1), 
+model = MyModel(experiment_name="fveg_11-29_gb", 
+                dataset="fveg", 
+                regressor=HistGradientBoostingRegressor(verbose=1, random_state=0), 
                 nans_ok=False,
                 month=True,
                 features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 

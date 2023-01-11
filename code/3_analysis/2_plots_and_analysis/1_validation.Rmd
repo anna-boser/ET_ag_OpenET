@@ -51,7 +51,9 @@ if (months_ts){
     geom_abline(intercept=0,slope=1, color="red") + 
     # annotate("text", x=4, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
     xlab("Predicted natural ET (mm/day)") + 
-    ylab("Observed fallow ET (mm/day)")
+    ylab("Observed fallow ET (mm/day)") +
+    xlim(c(0,6)) + 
+    ylim(c(0,6))
   }
 print(paste("R2:", round(r2, 3), "Bias:", round(Bias, 3)))
 ```
@@ -74,7 +76,9 @@ ggplot(fallow_year) +
   geom_abline(intercept=0,slope=1, color="red") + 
   # annotate("text", x=3, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
   xlab("Predicted natural ET (mm/day)") + 
-  ylab("Observed fallow ET (mm/day)")
+  ylab("Observed fallow ET (mm/day)") +
+    xlim(c(0,4)) + 
+    ylim(c(0,4))
 
 print(paste("R2:", round(r2, 3), "Bias:", round(Bias, 3)))
 ```
@@ -163,12 +167,16 @@ gridded_cv_metrics$y <- as.numeric(str_extract(gridded_cv_metrics$cv_fold, "(?<=
 study_area <- st_read(study_area_loc) %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
 counties <- st_read(counties_loc) %>% filter(STATEFP == "06") %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
 
+gridded_cv_metrics$RMSE <- ifelse(gridded_cv_metrics$RMSE>1.5, 1.5, gridded_cv_metrics$RMSE)
+gridded_cv_metrics$Bias <- ifelse(gridded_cv_metrics$Bias>1, 1, gridded_cv_metrics$Bias)
+gridded_cv_metrics$Bias <- ifelse(gridded_cv_metrics$Bias<(-1), -1, gridded_cv_metrics$Bias)
+
 filter(gridded_cv_metrics) %>%
   ggplot() + 
   geom_sf(data = counties, color=alpha("white",1), size = .2) + 
   geom_raster(aes(x=x, y=y, fill=Bias)) +
   facet_wrap(vars(fold_size/1000)) +
-  scale_fill_distiller(palette="Spectral", direction = -1, limits = c(-2,2)) +
+  scale_fill_distiller(palette="Spectral", direction = -1, limits = c(-1,1)) +
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   theme_classic() +
   xlim(c(-122.92, -118)) + 
@@ -309,7 +317,9 @@ if (months_ts){
     geom_abline(intercept=0,slope=1, color="red") + 
     # annotate("text", x=4.5, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
     xlab("Predicted natural ET (mm/day)") + 
-    ylab("Observed fallow ET (mm/day)")
+    ylab("Observed fallow ET (mm/day)") +
+    xlim(c(0,8)) + 
+    ylim(c(0,8))
 }
 
 print(paste("R2:", round(r2, 3), "Bias:", round(Bias, 3)))
@@ -328,12 +338,14 @@ if (months_ts){
 r2 <- summary(lm(ET~ET_pred, data=cv_best_fold_year))$r.squared 
 Bias <- mean(cv_best_fold_year$ET_pred - cv_best_fold_year$ET, na.rm=TRUE)
 ggplot(cv_best_fold_year) +
-  geom_jitter(aes(x=ET_pred, y=ET), alpha=0.2, size =.1) + 
+  geom_jitter(aes(x=ET_pred, y=ET), alpha=0.02, size =.01) + 
   theme_classic() + 
   geom_abline(intercept=0,slope=1, color="red") + 
   # annotate("text", x=4.5, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
   xlab("Predicted natural ET (mm/day)") + 
-  ylab("Observed fallow ET (mm/day)")
+  ylab("Observed fallow ET (mm/day)") +
+    xlim(c(0,6)) + 
+    ylim(c(0,6))
 
 print(paste("R2:", round(r2, 3), "Bias:", round(Bias, 3)))
 ```

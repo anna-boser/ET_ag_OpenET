@@ -33,7 +33,7 @@ class MyModel():
         shutil.copy(here("code/2_counterfactual/experiments.py"), self.experiment_path + "/experiments.py")
         shutil.copy(here("code/2_counterfactual/model_class.py"), self.experiment_path + "/model_class.py")
 
-    def crossval(self, train_or_test="train", distances=[30000, 20000, 10000, 5000, 2000, 1000, 1]):
+    def crossval(self, train_or_test="train", distances=[50000, 20000, 10000, 5000, 2000, 1]):
 
         # retrieve the dataset to crossvalidate over
         if train_or_test=="train":
