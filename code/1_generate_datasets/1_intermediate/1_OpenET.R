@@ -9,6 +9,7 @@ library(ggplot2)
 library(tidyr)
 library(stringr)
 library(sf)
+library(parallel)
 
 source(here("file_paths.R"))
 
@@ -45,8 +46,10 @@ clip_resample_save <- function(month, year){
   return(raster)
 }
 
+# clip_resample_save(1, 2016)
+
 years <- 2016:2021
-months <- list(2016:2021)
+months <- list(1:12)
 
 for (year in years){
   no_cores <- detectCores() - 1 # Calculate the number of cores
