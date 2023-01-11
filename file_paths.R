@@ -19,6 +19,10 @@ directory_path <- function(filepath){
 # https://appeears.earthdatacloud.nasa.gov/
 raw_ecostress_path <- here("data", "1_raw", "ECOSTRESS")
 
+# OpenET 2016-2021
+# From google earth engine; see https://code.earthengine.google.com/cb078c9f8933fb4814619c7982b8e615 for script
+raw_openet_path <- here("data", "1_raw", "OpenET")
+
 # study area
 # generated in ET_agriculture repository. Basically just a 10km buffer around ag lands in the central valley. 
 study_area_loc <- here("data", "1_raw", "study_area", "study_area.shp")
@@ -28,7 +32,7 @@ study_area_loc <- here("data", "1_raw", "study_area", "study_area.shp")
 CA_grid_loc <- here("data", "1_raw", "study_area", "CA_grid.tif")
 
 # consistent grid -- study area
-# generated in 1_generate_datasets/1_intermediate/ECOSTRESS.R
+# generated in 1_generate_datasets/1_intermediate/OpenET.R
 grid_loc <- here("data", "1_raw", "study_area", "grid.tif")
 
 # monthly bricks of resampled ECOSTRESS data
@@ -38,6 +42,10 @@ ECOSTRESS_bricks_path <- here("data", "2_intermediate", "ECOSTRESS", "bricks")
 # tifs of temporally aggregated ECOSTRESS data
 # generated in 1_generate_datasets/1_intermediate/ECOSTRESS.R
 intermediate_ecostress_path <- here("data", "2_intermediate", "ECOSTRESS", "means")
+
+# tifs of monthly OpenET data
+# generated in 1_generate_datasets/1_intermediate/OpenET.R
+intermediate_openet_path <- here("data", "2_intermediate", "OpenET")
 
 # raw landiq/dwr agriculture data
 # from https://data.cnra.ca.gov/dataset/6c3d65e3-35bb-49e1-a51e-49d5a2cf09a9/resource/1da7b37a-dd97-4b69-a86a-fe824a252eaf/download/i15_crop_mapping_2019.zip
@@ -174,6 +182,17 @@ fallow_data_loc <- here("data", "3_for_counterfactual", "agriculture", "fallow.c
 # created in 3_analysis/1_additional_data_manipulation/2_ag_natural_distance.R
 distance_distribution_path <- here("data", "4_for_analysis", "distances")
 
+# USGS irrigation data
+# 2015: https://waterdata.usgs.gov/ca/nwis/water_use?wu_year=2015&wu_area=County&wu_county=ALL&wu_category=IC&submitted_form=introduction&wu_county_nms=--ALL+Counties--&wu_category_nms=Irrigation%2C+Crop
+# 2010: https://waterdata.usgs.gov/ca/nwis/water_use?wu_year=2010&wu_area=County&wu_county=ALL&wu_category=IC&submitted_form=introduction&wu_county_nms=--ALL+Counties--&wu_category_nms=Irrigation%2C+Crop
+usgs_irr_path <- here("data", "1_raw", "USGS_waterdata")
 
+# CalSIMETAW water use comparisons
+# https://data.ca.gov/dataset/cal-simetaw-unit-values
+calsimetaw_loc <- here("data", "1_raw", "CalSIMETAW", "calsimetaw.csv")
 
+# USDA/NASS crop stats
+# https://www.nass.usda.gov/Quick_Stats/Ag_Overview/stateOverview.php?state=CALIFORNIA
+# manual changes to remove subcategory information/turn into csv
+crop_value_loc <- here("data", "1_raw", "USDA_NASS_State_of_Ag", "crop_value.csv")
 

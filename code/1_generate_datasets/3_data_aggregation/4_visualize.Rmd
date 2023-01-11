@@ -14,6 +14,7 @@ library(dplyr)
 library(ggplot2)
 library(sf)
 library(stringr)
+library(tidyr)
 
 source(here("file_paths.R"))
 ```
@@ -28,6 +29,51 @@ ag$month <- str_extract(ag$month, '\\b\\w+$') %>% as.numeric()
 fveg <- fread(here(natural_data_path, "fveg.csv"))
 fveg$month <- str_extract(fveg$month, '\\b\\w+$') %>% as.numeric()
 ```
+
+```{r}
+data <- rbind(ag, fveg, fill=TRUE)
+
+# drop ET, average PET over months
+data <- data %>% group_by(x, y, Agriculture, FVEG, Elevation, Slope, Aspect, Soil, TWI) %>% summarize(PET = mean(PET, na.rm=TRUE))
+# make a single landcover column
+data$landcover <- ifelse(!is.na(data$Agriculture), "Agriculture", "Natural Land")
+
+data <- filter(data, Elevation >=-300, Aspect >=-300, Slope >=-300)
+
+options(digits=22)
+# if there is no aspect then the algorithm assigns it 1.570796370506289951763 or 4.712389 so we turn these into NA
+data$Aspect <- ifelse(data$Aspect %in% c(1.570796370506289951763, 4.7123889923095703125), NA, data$Aspect)
+data$Slope <- data$Slope*90 #in degrees
+data$Slope <- ifelse(data$Slope>30, NA, data$Slope) #in degrees
+
+data$Elevation <- data$Elevation/1000
+
+data <- ungroup(data) # select doesn't work with a grouped dataset
+
+data_p <- dplyr::select(data, x, y, Elevation, Aspect, Slope, Soil, PET, TWI, landcover)
+names(data_p) <- c("x", "y", "Elevation (km)", "Aspect (radians)", "Slope (degrees)", "Soil quality (CA storie index)", "PET (mm)", "Topographic wetness (TWI)", "Landcover")
+data2 <- data_p %>% 
+  pivot_longer(cols = c("Elevation (km)", "Aspect (radians)", "Slope (degrees)", "Soil quality (CA storie index)", "PET (mm)", "Topographic wetness (TWI)"), names_to = "variable") 
+data2$variable <- factor(data2$variable, levels = c("Elevation (km)", "Aspect (radians)", "Slope (degrees)", "Soil quality (CA storie index)", "PET (mm)", "Topographic wetness (TWI)"))
+
+# plot out the distributions of the model inputs over natural and agricultural lands
+data2 %>%
+  ggplot() + 
+  geom_density(aes(x = value, fill = Landcover), lwd = 0, alpha = .4, bw = .05) + 
+  scale_fill_manual(values=c("navyblue", "grey")) +
+  facet_wrap(vars(variable), scales = "free", labeller = labeller(Landcover = labs)) + 
+  theme_classic() +  
+  theme(legend.position = c(0.9, 0.8), 
+        axis.title.x=element_blank(),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) 
+
+rm(data)
+rm(data_p)
+rm(data2)
+```
+
 
 ```{r}
 # study area
@@ -66,7 +112,7 @@ filter(ag) %>%
 
 ```{r}
 # visualize the split
-train <- fread(here(natural_data_path, "train", "fveg.csv"))
+train <- fread(here(natural_data_path, "training_data", "fveg.csv"))
 train$month <- str_extract(train$month, '\\b\\w+$') %>% as.numeric()
 
 filter(train) %>%
@@ -112,10 +158,17 @@ ag$lct <- "ag"
 fveg$lct <- "natural"
 b <- rbind(ag, fveg)
 b2 <- b %>% group_by(month, lct) %>% summarize(ET = mean(ET, na.rm=TRUE))
-
-ggplot(b2) + 
-  geom_line(aes(x=month, y=ET, color=lct))
 ```
+```{r}
+ggplot(b2) + 
+  geom_line(aes(x=month, y=ET, color=lct)) + 
+  scale_color_manual(values=c("navyblue", "goldenrod4")) +
+  theme_classic() + 
+  ylab("ET (mm/day)") + 
+  xlab("Month") +
+  theme(legend.position = "none")
+```
+
 
 ```{r}
 openet <- fread("~/Downloads/explore.etdata.org_raster_latlon_[36.92136814432773,-120.89200537651779].csv", sep=",", fill=TRUE)
