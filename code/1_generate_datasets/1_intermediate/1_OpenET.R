@@ -49,7 +49,7 @@ clip_resample_save <- function(month, year){
 # clip_resample_save(1, 2016)
 
 years <- 2016:2021
-months <- list(1:12)
+months <- c(1:12)
 
 for (year in years){
   no_cores <- detectCores() - 1 # Calculate the number of cores
