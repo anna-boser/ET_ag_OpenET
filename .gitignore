@@ -1,0 +1,11 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.DS_Store
+*/.DS_Store
+data/*
+*.Rout
+*.out
+*.sh
+code/2_counterfactual/__pycache__/*

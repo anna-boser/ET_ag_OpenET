@@ -1,0 +1,212 @@
+---
+title: "CalSIMETAW comparison"
+author: "Anna Boser"
+date: "2022-12-20"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(data.table)
+library(here)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(stringr)
+library(ggrepel)
+
+source(here("file_paths.R"))
+```
+
+## Compare my estimates of crop water use and irrigation water use to CalSIMETAW outputs
+Data from: https://data.ca.gov/dataset/cal-simetaw-unit-values
+
+```{r}
+CS <- fread(calsimetaw_loc)
+
+# keep only counties of interest
+counties <- c("Tehama", "Glenn", "Butte", "Colusa", "Sutter", "Yuba", "Yolo", "Solano", "Sacramento", "San Joaquin", "Stanislaus", "Merced", "Madera", "Fresno", "Kings", "Tulare", "Kern")
+
+CS <- filter(CS, COUNTY_NAME %in% counties)
+
+# get mm/day 
+CS$Date <- as.Date(CS$Date)
+CS$year <- year(CS$Date + 92) # add three months to get the water year
+
+# average by CalSIMETAW crop type and year. get mm/da instead of mm/month
+CS <- CS %>% 
+  group_by(CROP_NAME, year) %>% 
+  summarize(ETo = mean(ETo/30.5), 
+            ETc = mean(ETc/30.5), 
+            Pcp = mean(Pcp/30.5), 
+            Er = mean(Er/30.5), 
+            Spg = mean(Spg/30.5), 
+            Espg = mean(Espg/30.5), 
+            AW = mean(AW/30.5))
+
+# lookup table
+l = c("Grain" = "Grain and hay crops", 
+      "Rice" = "Rice", 
+      "Cotton" = "Field crops", 
+      "Sugar Beets" = "Truck, nursery, and berry crops", 
+      "Corn" = "Field crops",
+      "Dry Beans" = "Truck, nursery, and berry crops",
+      "Safflower" = "Field crops",
+      "Other Field" = "Field crops",
+      "Alfalfa" = "Grain and hay crops", 
+      "Pasture" = "Pasture", 
+      "Tomato Processing" = "Truck, nursery, and berry crops", 
+      "Tomato Fresh" = "Truck, nursery, and berry crops", 
+      "Cucurbits" = "Truck, nursery, and berry crops", 
+      "Onions & Garlic" = "Truck, nursery, and berry crops", 
+      "Potatoes" = "Truck, nursery, and berry crops", 
+      "Truck Crops" = "Truck, nursery, and berry crops", 
+      "Almond & Pistacios" = "Deciduous fruits and nuts", 
+      "Other Decidious" = "Deciduous fruits and nuts", 
+      "Citrus & Subtropical" = "Citrus and subtropical", 
+      "Vineyard" = "Vineyards", 
+      "Urban Landscape" = NA, 
+      "Riparian" = NA, 
+      "Native Vegetation" = NA, # "Fallow or idle", 
+      "Water Surface" = NA)
+
+CS$cropnames = l[CS$CROP_NAME]
+CS <- filter(CS, !is.na(cropnames))
+
+CS_means <- CS %>% 
+  group_by(cropnames) %>%
+  summarize(ETo_sd = sd(ETo), 
+            ETc_sd = sd(ETc), 
+            Pcp_sd = sd(Pcp), 
+            Er_sd = sd(Er), 
+            Spg_sd = sd(Spg), 
+            Espg_sd = sd(Espg), 
+            AW_sd = sd(AW), 
+            ETc_Pcp_sd = sd(ETc-Pcp), 
+            
+            ETo = mean(ETo), 
+            ETc = mean(ETc), 
+            Pcp = mean(Pcp), 
+            Er = mean(Er), 
+            Spg = mean(Spg), 
+            Espg = mean(Espg), 
+            AW = mean(AW), 
+            ETc_Pcp = mean(ETc-Pcp))
+```
+
+```{r}
+ggplot(CS_means, aes(x = reorder(cropnames, ETc))) + 
+  geom_col(aes(y = ETc, fill = "ETc"), alpha = 0.6) + 
+  geom_col(aes(y = Pcp, fill = "Precipitation"), alpha = 0.6) + 
+  theme(axis.text.x = element_text(angle = 30, hjust=1), 
+        axis.title.x=element_blank(), 
+        axis.ticks.x=element_blank(), 
+        legend.position = "top", 
+        legend.direction="horizontal", 
+        legend.title=element_blank()) + 
+  ylab("ETc (mm/day)")
+```
+
+## get the agricultural ET and natural ET from my data
+
+```{r}
+experiment_name <- "fveg_11-30_gb_test_set"
+experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+months_ts <- TRUE
+
+```
+
+```{r}
+data <- fread(file = here(experiment_path, "agriculture.csv"))
+
+data[data == -9999] <- NA # this is the na value
+
+if (months_ts){
+  # get a nice column of numeric months
+  months <- select(data, names(data)[grepl("month", names(data))])
+  data$month <- names(months)[max.col(months)] 
+  data$month <- str_extract(data$month, '\\b\\w+$') %>% as.numeric()
+}
+```
+
+## average over months
+```{r}
+if (months_ts == TRUE){
+  # Average over monthgroups
+  data <- data %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
+                                                  ET_pred = mean(ET_pred, na.rm=TRUE), 
+                                                  ag_ET = ET-ET_pred)
+}
+```
+
+# add crop type information 
+```{r}
+data$x <- round(data$x, 7)
+data$y <- round(data$y, 7)
+
+# add_crops
+crops <- fread(crops_table_loc)
+crops$cell <- NULL
+crops$x <- round(crops$x, 7)
+crops$y <- round(crops$y, 7)
+
+data <- merge(data, crops, by = c("x", "y"), all.x=TRUE)
+data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow or idle", data$cropnames) # rename unclassified fallow to just fallow
+```
+
+
+Check how water use varies by crop
+```{r}
+bardata = data %>% 
+  filter(!is.na(cropnames)) %>%
+  group_by(cropnames) %>%
+  summarize(ET = mean(ET, na.rm = TRUE), 
+            ag_ET = mean(ag_ET, na.rm = TRUE), 
+            ET_pred = mean(ET_pred, na.rm = TRUE)) 
+```
+
+Plot the things
+```{r}
+scatter_data <- merge(CS_means, bardata, by = "cropnames")
+
+```
+
+```{r}
+ggplot(scatter_data) + 
+  geom_abline(intercept=0,slope=1, color="red") + 
+  geom_point(aes(x = ET, y = ETc)) + 
+  geom_linerange(aes(x = ET, ymin = (ETc - 1.96*(ETc_sd/15)), ymax = (ETc + 1.96*(ETc_sd/15)))) + 
+  geom_label_repel(aes(x = ET, y = ETc, label = cropnames)) + 
+  theme_classic() + 
+  xlim(c(1,4)) + 
+  ylim(c(1,4)) + 
+  xlab("Observed ET (mm/day)") + 
+  ylab("CalSIMETAW ETc (mm/day)")
+```
+
+```{r}
+ggplot(scatter_data) + 
+  geom_abline(intercept=0,slope=1, color="red") + 
+  geom_point(aes(x = ag_ET, y = ETc_Pcp)) + 
+  geom_linerange(aes(x = ag_ET, ymin = (ETc_Pcp - 1.96*(ETc_Pcp_sd/15)), ymax = (ETc_Pcp + 1.96*(ETc_Pcp_sd/15)))) + 
+  geom_label_repel(aes(x = ag_ET, y = ETc_Pcp, label = cropnames)) + 
+  theme_classic() + 
+  xlab("Agricultural ET (mm/day)") + 
+  ylab("CalSIMETAW ETc - Precipitation (mm/day)")
+```
+
+Precipitation vs natural ET
+```{r}
+ggplot(scatter_data, aes(x = reorder(cropnames, ET_pred))) + 
+  theme_classic() + 
+  geom_col(aes(y=ET_pred), fill ="goldenrod4", alpha = .4) + 
+  geom_abline(aes(intercept=Pcp,slope=0), color="blue") +  
+  geom_rect(aes(ymin = Pcp - 1.96*(Pcp_sd/15), ymax = Pcp + 1.96*(Pcp_sd/15), xmin = 0.25, xmax = 8.75), alpha = .05, fill = "blue") +
+  geom_text(aes(x = 7, y = Pcp + .1, label = "Precipitation (CalSIMETAW)"), color = "blue") + 
+  ylab("Natural ET (ML model)") + 
+  theme(axis.text.x = element_text(angle = 30, hjust=1), 
+      axis.title.x=element_blank(), 
+      axis.ticks.x=element_blank())
+```
+
