@@ -95,8 +95,8 @@ process_pet <- function(months, year){
   writeRaster(sa, here(PET_study_area_path, filename), "GTiff", overwrite=TRUE)
 }
 
-years <- 2019:2021
-months <- list(c(1,2), c(3,4), c(5,6), c(7,8), c(9,10), c(11,12))
+years <- 2016:2021
+months <- 1:12 # list(c(1,2), c(3,4), c(5,6), c(7,8), c(9,10), c(11,12)) 
 for (year in years){
   no_cores <- detectCores() - 1 # Calculate the number of cores
   print(no_cores)
@@ -105,18 +105,18 @@ for (year in years){
   stopCluster(cl)
 }
 
-# then average over all years for each monthgroup
-years <- 2019:2021
-months <- c("1+2", "3+4", "5+6", "7+8", "9+10", "11+12")
-for (month in months){
-  # get all tifs for that monthgroup
-  tifs <- here(PET_study_area_path, paste0(month, "-", years, ".tif"))
-  
-  # take the mean across monthgroup
-  raster <- mean(brick(lapply(tifs, raster)))
-  
-  # save
-  writeRaster(raster, here(PET_study_area_path, paste0(month, "-all.tif")), "GTiff", overwrite=TRUE)
-}
+# # then average over all years for each monthgroup (only for ECOSTRESS due to lack of data)
+# years <- 2019:2021
+# months <- c("1+2", "3+4", "5+6", "7+8", "9+10", "11+12")
+# for (month in months){
+#   # get all tifs for that monthgroup
+#   tifs <- here(PET_study_area_path, paste0(month, "-", years, ".tif"))
+#   
+#   # take the mean across monthgroup
+#   raster <- mean(brick(lapply(tifs, raster)))
+#   
+#   # save
+#   writeRaster(raster, here(PET_study_area_path, paste0(month, "-all.tif")), "GTiff", overwrite=TRUE)
+# }
 
 
