@@ -41,25 +41,27 @@ layer_locations <- c("Agriculture"=ag_rast_loc,
 
 # tack on time invarying columns
 for (i in 1:length(layer_locations)){
+  print(layer_locations[i]) # for debugging
   layer <- (raster(layer_locations[i]) %>% as.data.frame(xy=TRUE))[!is.na(study_area_pixels),][,3]
   study_area_df[,names(layer_locations)[i]] <- layer
 }
 
 # now for time varying columns
-layer_paths <- c("ET"=intermediate_ecostress_path, 
+layer_paths <- c("ET"=intermediate_openet_path, 
                  "PET"=PET_study_area_path)
 
-# for each monthgroup, generate a dataset with ET and PET and smush them together
-months <- c("1+2", "3+4", "5+6", "7+8", "9+10", "11+12")
-add_monthgroup <- function(monthgroup, dataset, year){
+# for each month, generate a dataset with ET and PET and smush them together
+months <- 1:12
+years <- 2016:2021
+add_month <- function(month, dataset, year){
   
-  #specify which monthgroup you're adding
-  dataset$month <- monthgroup
+  #specify which month you're adding
+  dataset$month <- month
   dataset$year <- year
   
-  # add all of the time varying variables for that monthgroup
+  # add all of the time varying variables for that month
   for (i in 1:length(layer_paths)){
-    layer_loc = here(layer_paths[i], paste0(monthgroup, "-", year, ".tif"))
+    layer_loc = here(layer_paths[i], paste0(month, "-", year, ".tif"))
     layer <- (raster(layer_loc) %>% as.data.frame(xy=TRUE))[!is.na(study_area_pixels),][,3]
     dataset[,names(layer_paths)[i]] <- layer
   }
@@ -67,7 +69,9 @@ add_monthgroup <- function(monthgroup, dataset, year){
   return(dataset)
 }
 
-time_varrying_df <- rbindlist(lapply(months, add_monthgroup, dataset=study_area_df, year="all"))
+for (year in years){
+  time_varrying_df <- rbindlist(lapply(months, add_month, dataset=study_area_df, year=year))
+}
 
 # filter out NAs for ET 
 time_varrying_df <- filter(time_varrying_df, !is.na(ET))
