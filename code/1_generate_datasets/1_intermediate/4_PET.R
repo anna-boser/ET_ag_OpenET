@@ -76,6 +76,7 @@ process_pet <- function(months, year){
   
   # save
   filename <- paste0(paste(months, collapse="+"), "-", year, ".tif")
+  dir.create(PET_means_path)
   writeRaster(mean, here(PET_means_path, filename), "GTiff", overwrite=TRUE)
   
   #############################################################################
@@ -84,6 +85,7 @@ process_pet <- function(months, year){
   rm(mean)
   
   # save
+  dir.create(PET_resampled_path)
   writeRaster(resampled, here(PET_resampled_path, filename), "GTiff", overwrite=TRUE)
   
   #############################################################################
@@ -92,6 +94,7 @@ process_pet <- function(months, year){
   rm(resampled)
   
   # save
+  dir.create(PET_study_area_path)
   writeRaster(sa, here(PET_study_area_path, filename), "GTiff", overwrite=TRUE)
 }
 
