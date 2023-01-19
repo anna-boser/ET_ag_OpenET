@@ -112,7 +112,7 @@ filter(ag) %>%
 
 ```{r}
 # visualize the split
-train <- fread(here(natural_data_path, "training_data", "fveg.csv"))
+train <- fread(here(natural_data_path, "train", "fveg.csv"))
 train$month <- str_extract(train$month, '\\b\\w+$') %>% as.numeric()
 
 filter(train) %>%
@@ -169,28 +169,4 @@ ggplot(b2) +
   theme(legend.position = "none")
 ```
 
-
-```{r}
-openet <- fread("~/Downloads/explore.etdata.org_raster_latlon_[36.92136814432773,-120.89200537651779].csv", sep=",", fill=TRUE)
-openet$date <- as.Date(openet$DateTime)
-openet$month <- month(openet$date) + month(openet$date)%%2
-openet <- openet %>% 
-  group_by(month) %>% 
-  summarize(ET = mean(`DisALEXI ET`/31))
-openet$m <- "openet"
-
-jpl <- fread("~/Downloads/tr-ECO3ETALEXI-001-results.csv")
-jpl$date <- as.Date(jpl$Date)
-jpl$month <- month(jpl$date) + month(jpl$date)%%2
-jpl <- jpl %>% filter(!(ECO3ETALEXI_001_EVAPOTRANSPIRATION_ALEXI_ETdaily>100))%>% 
-  group_by(month) %>% 
-  summarize(ET = mean(ECO3ETALEXI_001_EVAPOTRANSPIRATION_ALEXI_ETdaily)) 
-jpl$m <- "jpl"
-
-b <- rbind(jpl, openet)
-
-ggplot(b)+ 
-  geom_line(aes(x=month, y=ET, col=m))
-
-```
 
