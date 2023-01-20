@@ -11,7 +11,7 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import HistGradientBoostingRegressor
 
 # first, define your model 
-model = MyModel(experiment_name="fveg_11-29_gb", 
+model = MyModel(experiment_name="fveg_1-18_gb", 
                 dataset="fveg", 
                 regressor=HistGradientBoostingRegressor(verbose=1, random_state=0), 
                 nans_ok=False,

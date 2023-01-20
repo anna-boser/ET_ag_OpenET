@@ -49,9 +49,9 @@ if (months_ts){
     geom_jitter(aes(x=ET_pred, y=ET, color=as.factor(month)), alpha=0.2, size =.1) + 
     theme_classic() + 
     geom_abline(intercept=0,slope=1, color="red") + 
-    annotate("text", x=4, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
-    xlab("Predicted natural ET (mm/day)") + 
-    ylab("Observed fallow ET (mm/day)")
+    annotate("text", x=4*30, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
+    xlab("Predicted natural ET (mm/month)") + 
+    ylab("Observed fallow ET (mm/month)")
   }
 ```
 
@@ -71,9 +71,9 @@ ggplot(fallow_year) +
   geom_jitter(aes(x=ET_pred, y=ET), alpha=0.2, size =.1) + 
   theme_classic() + 
   geom_abline(intercept=0,slope=1, color="red") + 
-  annotate("text", x=3, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
-  xlab("Predicted natural ET (mm/day)") + 
-  ylab("Observed fallow ET (mm/day)")
+  annotate("text", x=3*30, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
+  xlab("Predicted natural ET (mm/month)") + 
+  ylab("Observed fallow ET (mm/month)")
 ```
 
 ### A time series 
@@ -284,8 +284,8 @@ if (months_ts){
     theme_classic() + 
     geom_abline(intercept=0,slope=1, color="red") + 
     # annotate("text", x=4.5, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
-    xlab("Predicted natural ET (mm/day)") + 
-    ylab("Observed fallow ET (mm/day)")
+    xlab("Predicted natural ET (mm/month)") + 
+    ylab("Observed fallow ET (mm/month)")
 }
 
 print(paste("R2:", round(r2, 3), "Bias:", round(bias, 3)))
@@ -310,9 +310,9 @@ ggplot(cv_best_fold_year) +
   theme(legend.position="none") + 
   theme_classic() + 
   geom_abline(intercept=0,slope=1, color="red") + 
-  # annotate("text", x=4.5, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
-  xlab("Predicted natural ET (mm/day)") + 
-  ylab("Observed fallow ET (mm/day)")
+  # annotate("text", x=4.5*30, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
+  xlab("Predicted natural ET (mm/month)") + 
+  ylab("Observed fallow ET (mm/month)")
 
 print(paste("R2:", round(r2, 3), "Bias:", round(bias, 3)))
 ```
