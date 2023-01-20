@@ -19,7 +19,7 @@ source(here("file_paths.R"))
 ```
 
 ```{r}
-experiment_name <- "fveg_11-29_gb"
+experiment_name <- "fveg_1-18_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 dataset <- "fveg"
 months_ts <- TRUE
@@ -35,7 +35,7 @@ if (months_ts){
   # get a nice column of numeric months
   months <- select(fallow, names(fallow)[grepl("month", names(fallow))])
   fallow$month <- names(months)[max.col(months)] 
-  fallow$month <- str_extract(fallow$month, '\\b\\w+$') %>% as.numeric()
+  fallow$month <- str_extract(fallow$month, '(?<=_)\\d+') %>% as.numeric()
 }
 ```
 
