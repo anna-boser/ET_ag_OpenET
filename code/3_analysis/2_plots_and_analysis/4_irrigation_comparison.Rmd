@@ -40,7 +40,7 @@ if (months_ts){
   # get a nice column of numeric months
   months <- select(data, names(data)[grepl("month", names(data))])
   data$month <- names(months)[max.col(months)] 
-  data$month <- str_extract(data$month, '\\b\\w+$') %>% as.numeric()
+  data$month <- str_extract(data$month, '(?<=_)\\d+') %>% as.numeric()
 }
 ```
 

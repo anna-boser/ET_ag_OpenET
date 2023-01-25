@@ -1,0 +1,102 @@
+---
+title: "Crop per drop"
+author: "Anna Boser"
+date: "2022-12-21"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(data.table)
+library(here)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+library(stringr)
+
+source(here("file_paths.R"))
+```
+
+# Here I check how much money is made per drop consumed
+
+## get the agricultural ET and natural ET from my data
+
+```{r}
+experiment_name <- "fveg_11-30_gb_test_set"
+experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+months_ts <- TRUE
+
+```
+
+```{r}
+data <- fread(file = here(experiment_path, "agriculture.csv"))
+
+data[data == -9999] <- NA # this is the na value
+
+if (months_ts){
+  # get a nice column of numeric months
+  months <- select(data, names(data)[grepl("month", names(data))])
+  data$month <- names(months)[max.col(months)] 
+  data$month <- str_extract(data$month, '(?<=_)\\d+') %>% as.numeric()
+}
+```
+
+## average over months
+```{r}
+if (months_ts == TRUE){
+  # Average over monthgroups
+  data <- data %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
+                                                  ET_pred = mean(ET_pred, na.rm=TRUE), 
+                                                  ag_ET = ET-ET_pred)
+}
+```
+
+# add crop type information 
+```{r}
+data$x <- round(data$x, 7)
+data$y <- round(data$y, 7)
+
+# add_crops
+crops <- fread(crops_table_loc)
+crops$cell <- NULL
+crops$x <- round(crops$x, 7)
+crops$y <- round(crops$y, 7)
+
+data <- merge(data, crops, by = c("x", "y"), all.x=TRUE)
+data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow or idle", data$cropnames) # rename unclassified fallow to just fallow
+```
+
+
+Check how water use varies by crop
+```{r}
+bardata = data %>% 
+  filter(!is.na(cropnames)) %>%
+  group_by(cropnames) %>%
+  summarize(ET = mean(ET, na.rm = TRUE), 
+            ag_ET = mean(ag_ET, na.rm = TRUE), 
+            ET_pred = mean(ET_pred, na.rm = TRUE)) 
+```
+
+## get $/crop numbers
+
+```{r}
+crop_value <- fread(crop_value_loc, header=T)
+
+# remove units
+crop_value$unitless_yield = str_extract(crop_value$Yield, "[0-9.,]*") %>% str_remove(",") %>% as.numeric()
+crop_value$unitless_price = sapply(crop_value[,"Price per Unit"], str_extract, "[0-9.,]*") %>% str_remove(",") %>% as.numeric()
+
+crop_value$price_per_acre = crop_value$unitless_price * crop_value$unitless_yield
+
+# get average price per acre for each crop type
+crop_value_mean <- crop_value %>%
+  group_by(cropnames) %>%
+  summarise(price_per_acre = mean(price_per_acre, na.rm=TRUE))
+```
+
+## merge the datasets
+```{r}
+data <- merge(bardata, crop_value_mean, by = "cropnames")
+```
+

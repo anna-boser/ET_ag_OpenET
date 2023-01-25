@@ -19,7 +19,7 @@ source(here("file_paths.R"))
 ```
 
 ```{r}
-experiment_name <- "fveg_12-3_gb_test_set"
+experiment_name <- "fveg_1-24_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 dataset <- "fveg"
 months_ts <- TRUE
@@ -35,7 +35,7 @@ if (months_ts){
   # get a nice column of numeric months
   months <- select(fallow, names(fallow)[grepl("month", names(fallow))])
   fallow$month <- names(months)[max.col(months)] 
-  fallow$month <- str_extract(fallow$month, '\\b\\w+$') %>% as.numeric()
+  fallow$month <- str_extract(fallow$month, '(?<=_)\\d+') %>% as.numeric()
 }
 ```
 
@@ -99,7 +99,7 @@ if (months_ts){
 Here I just got curious about what ag ET vs fallow ET look like. Seems like fallow ET is probably artificially high. 
 ```{r}
 # ag <- fread(here("data", "3_for_counterfactual", "agriculture", "agriculture.csv"))
-# ag$month <- str_extract(ag$month, '\\b\\w+$') %>% as.numeric()
+# ag$month <- str_extract(ag$month, '(?<=_)\\d+') %>% as.numeric()
 # 
 # # plot out the time series
 # ag_ts <- ag %>% group_by(month) %>% summarize(ET = mean(ET, na.rm=TRUE))
@@ -121,7 +121,7 @@ if (months_ts){
   # get a nice column of numeric months
   months <- select(cv, names(cv)[grepl("month", names(cv))])
   cv$month <- names(months)[max.col(months)] 
-  cv$month <- str_extract(cv$month, '\\b\\w+$') %>% as.numeric()
+  cv$month <- str_extract(cv$month, '(?<=_)\\d+') %>% as.numeric()
 }
 
 cv$mean_dist <- cv$fold_size/6 # the average distance between a held out point and the border to the hold out
