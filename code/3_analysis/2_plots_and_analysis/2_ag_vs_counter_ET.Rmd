@@ -23,7 +23,7 @@ source(here("file_paths.R"))
 
 ## Read in the data
 ```{r}
-experiment_name <- "fveg_11-30_gb_test_set"
+experiment_name <- "fveg_1-24_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 months_ts <- TRUE
 ```
@@ -73,7 +73,7 @@ ggplot() +
   geom_sf(data = counties, color=alpha("white",1), size = .2) + 
   geom_raster(data = data, aes(x=x, y=y, fill=ET)) +
   facet_grid(cols=vars(type), labeller = labeller(type = new.labs)) +
-  scale_fill_gradientn(name="ET (mm/day)", colours = c("darkgoldenrod4", "darkgoldenrod2", "khaki1", "lightgreen", "turquoise3", "deepskyblue3", "mediumblue", "navyblue", "midnightblue", "black")) + #, limits = c(-2.5, 8)) +
+  scale_fill_gradientn(name="ET (mm/month)", colours = c("darkgoldenrod4", "darkgoldenrod2", "khaki1", "lightgreen", "turquoise3", "deepskyblue3", "mediumblue", "navyblue", "midnightblue", "black")) + #, limits = c(-2.5, 8)) +
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   xlim(c(-122.92, -118.6)) + 
   ylim(c(34.94, 40.754)) + 

@@ -11,12 +11,12 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import HistGradientBoostingRegressor
 
 # first, define your model 
-model = MyModel(experiment_name="fveg_1-18_gb", 
+model = MyModel(experiment_name="fveg_1-25_gb_xy", 
                 dataset="fveg", 
-                regressor=HistGradientBoostingRegressor(verbose=1, random_state=0), 
+                regressor=RandomForestRegressor(n_estimators=100, verbose=1, random_state=0), 
                 nans_ok=False,
                 month=True,
-                features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 
+                features=["x", "y"], #, "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 
                 hparam=False)
 
 # second, perform a cross-validation using the test set
