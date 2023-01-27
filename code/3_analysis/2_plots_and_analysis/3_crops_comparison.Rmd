@@ -11,7 +11,7 @@ library(sp)
 library(here)
 library(stringr)
 library(sf)
-library(tmap)
+#library(tmap)
 library(data.table)
 library(tidyr)
 library(dplyr)
@@ -24,7 +24,7 @@ source(here("file_paths.R"))
 ```
 
 ```{r}
-avg_irr <- 1.97 # irrigation efficiency in mm/day spread over the year (mm/day)
+avg_irr <- 1.97*30 # irrigation efficiency in mm/month spread over the year (mm/month)
 ```
 
 ## Read in the data
@@ -273,7 +273,7 @@ ggplot(bardata_ag_ET, aes(x = reorder(cropnames, ET))) +
   # scale_color_manual(values=c("black"), labels = c("Standard deviation")) + 
   theme_classic() + 
   labs(fill='') + 
-  ylab("mm/day") + 
+  ylab("mm/month") + 
   theme(axis.text.x = element_text(angle = 30, hjust=1), 
         axis.title.x=element_blank(), 
         axis.ticks.x=element_blank(), 
@@ -291,7 +291,7 @@ ggplot(bardata_ag_ET, aes(x = reorder(cropnames, ET))) +
   scale_color_manual(values=c("black"), labels = c("Standard deviation")) + 
   theme_classic() + 
   labs(fill='') + 
-  ylab("mm/day") + 
+  ylab("mm/month") + 
   theme(axis.text.x = element_text(angle = 30, hjust=1), 
         axis.title.x=element_blank(), 
         axis.ticks.x=element_blank(), 

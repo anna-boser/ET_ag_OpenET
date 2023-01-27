@@ -50,10 +50,10 @@ if (months_ts){
     theme_classic() + 
     geom_abline(intercept=0,slope=1, color="red") + 
     # annotate("text", x=4, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
-    xlab("Predicted natural ET (mm/day)") + 
-    ylab("Observed fallow ET (mm/day)") +
-    xlim(c(0,6)) + 
-    ylim(c(0,6))
+    xlab("Predicted natural ET (mm/month)") + 
+    ylab("Observed fallow ET (mm/month)") +
+    xlim(c(0,6*30)) + 
+    ylim(c(0,6*30))
   }
 print(paste("R2:", round(r2, 3), "Bias:", round(Bias, 3)))
 ```
@@ -75,10 +75,10 @@ ggplot(fallow_year) +
   theme_classic() + 
   geom_abline(intercept=0,slope=1, color="red") + 
   # annotate("text", x=3, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
-  xlab("Predicted natural ET (mm/day)") + 
-  ylab("Observed fallow ET (mm/day)") +
-    xlim(c(0,4)) + 
-    ylim(c(0,4))
+  xlab("Predicted natural ET (mm/month)") + 
+  ylab("Observed fallow ET (mm/month)") +
+    xlim(c(0,4*30)) + 
+    ylim(c(0,4*30))
 
 print(paste("R2:", round(r2, 3), "Bias:", round(Bias, 3)))
 ```
@@ -176,7 +176,7 @@ filter(gridded_cv_metrics) %>%
   geom_sf(data = counties, color=alpha("white",1), size = .2) + 
   geom_raster(aes(x=x, y=y, fill=Bias)) +
   facet_wrap(vars(fold_size/1000)) +
-  scale_fill_distiller(palette="Spectral", direction = -1, limits = c(-1,1)) +
+  scale_fill_distiller(palette="Spectral", direction = -1, limits = c(-1*30,1*30)) +
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   theme_classic() +
   xlim(c(-122.92, -118)) + 
@@ -193,7 +193,7 @@ filter(gridded_cv_metrics) %>%
   geom_sf(data = counties, color=alpha("white",1), size = .2) + 
   geom_raster(aes(x=x, y=y, fill=RMSE)) +
   facet_wrap(vars(fold_size/1000)) +
-  scale_fill_distiller(palette="Spectral", direction = -1, limits = c(0,1.5)) +
+  scale_fill_distiller(palette="Spectral", direction = -1, limits = c(0,1.5*30)) +
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   theme_classic() +
   xlim(c(-122.92, -118)) + 
@@ -316,8 +316,8 @@ if (months_ts){
     theme_classic() + 
     geom_abline(intercept=0,slope=1, color="red") + 
     # annotate("text", x=4.5, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
-    xlab("Predicted natural ET (mm/day)") + 
-    ylab("Observed fallow ET (mm/day)") +
+    xlab("Predicted natural ET (mm/month)") + 
+    ylab("Observed fallow ET (mm/month)") +
     xlim(c(0,8)) + 
     ylim(c(0,8))
 }
@@ -342,10 +342,10 @@ ggplot(cv_best_fold_year) +
   theme_classic() + 
   geom_abline(intercept=0,slope=1, color="red") + 
   # annotate("text", x=4.5, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
-  xlab("Predicted natural ET (mm/day)") + 
-  ylab("Observed fallow ET (mm/day)") +
-    xlim(c(0,6)) + 
-    ylim(c(0,6))
+  xlab("Predicted natural ET (mm/month)") + 
+  ylab("Observed fallow ET (mm/month)") +
+    xlim(c(0,6*30)) + 
+    ylim(c(0,6*30))
 
 print(paste("R2:", round(r2, 3), "Bias:", round(Bias, 3)))
 ```
