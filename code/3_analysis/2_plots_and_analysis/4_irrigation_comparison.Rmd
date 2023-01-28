@@ -10,7 +10,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(here)
 library(stringr)
 library(sf)
-library(tmap)
+#library(tmap)
 library(data.table)
 library(tidyr)
 library(dplyr)
@@ -26,7 +26,7 @@ source(here("file_paths.R"))
 
 ## Read in the data
 ```{r}
-experiment_name <- "fveg_11-30_gb_test_set"
+experiment_name <- "fveg_1-24_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 months_ts <- TRUE
 ```

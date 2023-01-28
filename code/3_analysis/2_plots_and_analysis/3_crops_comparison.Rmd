@@ -29,7 +29,7 @@ avg_irr <- 1.97*30 # irrigation efficiency in mm/month spread over the year (mm/
 
 ## Read in the data
 ```{r}
-experiment_name <- "fveg_11-30_gb_test_set"
+experiment_name <- "fveg_1-24_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 months_ts <- TRUE
 ```
@@ -201,14 +201,16 @@ percent$percent <- paste0(as.character(round(percent$ag_ET/percent$ET, 2)*100), 
 ```{r}
 bardata2 <- filter(bardata, type != "ET")
 
+scalar = 1.2 # turns mm/month to cm/year
+
 ggplot(ag_ET_df, aes(x = reorder(cropnames, ET))) + 
-  geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
-  geom_col(data = bardata2, aes(y = ET*36.5, fill = type), alpha = .6) +
+  geom_linerange(data = ag_ET_df, aes(ymax = min*scalar, ymin = max*scalar), color = "seagreen") + 
+  geom_col(data = bardata2, aes(y = ET*scalar, fill = type), alpha = .6) +
   scale_fill_manual(values=c("goldenrod4", "seagreen"), labels = c("Simulated natural ET", "Agricultural ET")) + 
-  geom_col(data = filter(bardata, type == "ET"), aes(y = ET, color = type), alpha = 0) +
+  geom_col(data = filter(bardata, type == "ET"), aes(y = ET*scalar, color = type), alpha = 0) +
   scale_color_manual(values=c("navyblue"), labels = c("Observed ET")) + 
-  geom_linerange(data = ET_df, aes(ymax = min, ymin = max), color = "navyblue") + 
-  geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
+  geom_linerange(data = ET_df, aes(ymax = min*scalar, ymin = max*scalar), color = "navyblue") + 
+  geom_linerange(data = ag_ET_df, aes(ymax = min*scalar, ymin = max*scalar), color = "seagreen") + 
   ylab("cm/year") + 
   theme_classic() + 
   labs(fill='') + 
@@ -223,13 +225,13 @@ ggplot(ag_ET_df, aes(x = reorder(cropnames, ET))) +
   # geom_text(data = percent, aes(y = ET, label = percent), vjust = -1.7)
 
 ggplot(ag_ET_df, aes(x = reorder(cropnames, ET))) + 
-  geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
-  geom_col(data = bardata2, aes(y = ET*36.5, fill = type), alpha = .6) +
+  geom_linerange(data = ag_ET_df, aes(ymax = min*scalar, ymin = max*scalar), color = "seagreen") + 
+  geom_col(data = bardata2, aes(y = ET*scalar, fill = type), alpha = .6) +
   scale_fill_manual(values=c("goldenrod4", "seagreen"), labels = c("Simulated natural ET", "Agricultural ET")) + 
-  geom_col(data = filter(bardata, type == "ET"), aes(y = ET, color = type), alpha = 0) +
+  geom_col(data = filter(bardata, type == "ET"), aes(y = ET*scalar, color = type), alpha = 0) +
   scale_color_manual(values=c("navyblue"), labels = c("Observed ET")) + 
-  geom_linerange(data = ET_df, aes(ymax = min, ymin = max), color = "navyblue") + 
-  geom_linerange(data = ag_ET_df, aes(ymax = min, ymin = max), color = "seagreen") + 
+  geom_linerange(data = ET_df, aes(ymax = min*scalar, ymin = max*scalar), color = "navyblue") + 
+  geom_linerange(data = ag_ET_df, aes(ymax = min*scalar, ymin = max*scalar), color = "seagreen") + 
   ylab("cm/year") + 
   theme_classic() + 
   labs(fill='') + 
@@ -303,6 +305,6 @@ ggplot(bardata_ag_ET, aes(x = reorder(cropnames, ET))) +
 regressions to see how much is explained by crops and crops+climate
 ```{r}
 felm(ag_ET~cropnames | 0 | 0 | cluster20, data) %>% summary()
-felm(ag_ET~cropnames+PET | 0 | 0 | cluster20, data) %>% summary()
+# felm(ag_ET~cropnames+PET | 0 | 0 | cluster20, data) %>% summary()
 felm(ag_ET~cropnames+ET_pred | 0 | 0 | cluster20, data) %>% summary()
 ```
