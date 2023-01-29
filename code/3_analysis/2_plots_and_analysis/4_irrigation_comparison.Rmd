@@ -103,10 +103,11 @@ assign_cluster <- function(x, y, dist){
 data$cluster20 <- mapply(assign_cluster, data$x, data$y, 20)
 ```
 
-I then need to get the total water ETd, so I multiply by the number of days in my observation window: 183
+I then need to get the total water ETd
+Since it's in mm/month, I need to multiply by the number of months
 ```{r}
-data$ag_ET_year <- data$ag_ET*183
-data$ET_year <- data$ET*183
+data$ag_ET_year <- data$ag_ET*12
+data$ET_year <- data$ET*12
 ```
 
 Use a clustered standard errors regression to retrieve the water consumption by county
@@ -305,7 +306,7 @@ cv_data$irrigation_efficiency <- ifelse(counties_irrigation$n > 50000, cv_data$i
 ggplot() + 
   geom_sf(data = cv_data, aes(fill = irrigation_efficiency), color=alpha("red",0)) + 
   geom_text(data = cv_data, aes(x = lon, y = lat, label = round(irrigation_efficiency, 0)), size = 2) + 
-  scale_fill_gradient2(name = "Irrigation efficiency (%)", low = "red", mid = "white", high = "#70AD47", limits = c(0, 25)) + 
+  scale_fill_gradient2(name = "Irrigation efficiency (%)", low = "red", mid = "white", high = "#70AD47", limits = c(0, max(cv_data$irrigation_efficiency))) + 
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   theme_void() + 
   theme(legend.position = c(.85, .77)) 
@@ -320,7 +321,7 @@ cv_data$prop_total_ET <- ifelse(counties_irrigation$n > 50000, cv_data$prop_tota
 ggplot() + 
   geom_sf(data = cv_data, aes(fill = prop_total_ET), color=alpha("red",0)) + 
   geom_text(data = cv_data, aes(x = lon, y = lat, label = round(prop_total_ET, 0)), size = 2) + 
-  scale_fill_gradient2(name = "Observed ET/Irrigation (%)", low = "red", mid = "white", high = "#70AD47", limits = c(0, 110)) + 
+  scale_fill_gradient2(name = "Observed ET/Irrigation (%)", low = "red", mid = "white", high = "#70AD47", limits = c(0, max(cv_data$prop_total_ET))) + 
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   theme_void() + 
   theme(legend.position = c(.85, .77)) 
