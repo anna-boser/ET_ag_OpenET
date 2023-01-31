@@ -51,6 +51,27 @@ if (months_ts == TRUE){
 }
 ```
 
+## histograms 
+```{r}
+hist_data <- pivot_longer(data, cols=c(ET, ET_pred, ag_ET), names_to="type", values_to="ET")
+hist_data$type <- factor(hist_data$type, levels=c("ET", "ET_pred", "ag_ET"))
+
+# also include the original natural lands in the densities
+data_natural <- fread(here("data", "3_for_counterfactual", "training_data", "fveg.csv"))
+
+if (months_ts){
+  # get a nice column of numeric months
+  months <- select(data_natural, names(data)[grepl("month", names(data))])
+  data_natural$month <- names(months)[max.col(months)] 
+  data_natural$month <- str_extract(data$month, '(?<=_)\\d+') %>% as.numeric()
+}
+
+data_natural$type <- "natural"
+
+hist_data <- rbind(hist_data, data_natural)
+```
+
+
 ## Make maps of ET, ET_pred, and ag_ET
 
 ```{r}
