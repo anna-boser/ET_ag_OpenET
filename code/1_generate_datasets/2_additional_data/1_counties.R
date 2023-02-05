@@ -41,6 +41,7 @@ county_pixels$value = NULL
 ## -----------------------------------------------
 
 # Save geoweights 
+dir.create(directory_path(county_table_loc))
 fwrite(county_pixels, file = file.path(county_table_loc))
 
   
