@@ -44,6 +44,7 @@ process_dwr <- function(year){
   # rm(DWR)
   
   # save ag polygon
+  dir.create(flat_ag_shp_path, recursive = TRUE)
   st_write(DWR_flat, here(flat_ag_shp_path, paste0("flat_ag", year, ".shp")))
   
   return(DWR_flat)
@@ -62,6 +63,7 @@ DWR_flat <- DWR_flat %>% st_transform(st_crs(CA_grid))
 DWR_raster <- fasterize(DWR_flat, CA_grid) # all pixels even partially covered by ag should be marked
 
 # save raster
+dir.create(directory_path(CA_ag_rast_loc), recursive = TRUE)
 writeRaster(DWR_raster, CA_ag_rast_loc, "GTiff", overwrite=TRUE)
 
 if (study_area){
@@ -69,5 +71,6 @@ if (study_area){
   study_area <- st_read(study_area_loc) %>% st_transform(st_crs(grid))
   DWR_raster <- mask(DWR_raster, study_area) %>% crop(study_area)
   
-  writeRaster(DWR_raster, ag_rast_path, "GTiff", overwrite=TRUE)
+  dir.create(directory_path(ag_rast_loc), recursive = TRUE)
+  writeRaster(DWR_raster, ag_rast_loc, "GTiff", overwrite=TRUE)
 }
