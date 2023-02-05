@@ -25,10 +25,6 @@ raw_openet_path <- here("data", "1_raw", "OpenET")
 # generated in ET_agriculture repository. Basically just a 10km buffer around ag lands in the central valley. 
 study_area_loc <- here("data", "1_raw", "study_area", "study_area.shp")
 
-# consistent grid -- all of CA
-# generated in ET_agriculture repository. Basically just one of the grids from the ET data extended to the enturety of California using extend(grid, CA). 
-CA_grid_loc <- here("data", "1_raw", "study_area", "CA_grid.tif")
-
 # consistent grid -- study area
 # generated in 1_generate_datasets/1_intermediate/OpenET.R
 grid_loc <- here("data", "1_raw", "study_area", "grid.tif")
@@ -44,10 +40,6 @@ raw_dwr_path <- here("data", "1_raw", "DWR")
 # flat ag shapefile where agriculture is in CA
 # created in 1_generate_datasets/1_intermediate/agriculture.R
 flat_ag_shp_loc <- here("data", "2_intermediate", "agriculture", "flag_ag")
-
-# raster of where agriculture is in CA
-# created in 1_generate_datasets/1_intermediate/agriculture.R
-CA_ag_rast_loc <- here("data", "2_intermediate", "agriculture", "CA_ag.tif")
 
 # raster of where agriculture is in the study area
 # created in 1_generate_datasets/1_intermediate/agriculture.R
