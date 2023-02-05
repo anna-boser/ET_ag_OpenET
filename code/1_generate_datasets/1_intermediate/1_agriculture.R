@@ -15,7 +15,7 @@ source("file_paths.R")
 years = c(2016, 2018, 2019) # years of available DWR data
 
 process_dwr <- function(year){
-  read_sf(here(raw_dwr_path, paste0("i15_Crop_Mapping_", year,".shp")))
+  DWR <- read_sf(here(raw_dwr_path, paste0("i15_Crop_Mapping_", year,".shp")))
   
   DWR <- st_zm(DWR) # DWR in 3 dims with 0 for z value
   
