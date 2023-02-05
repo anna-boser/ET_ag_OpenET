@@ -1,6 +1,9 @@
 # This script processes the OpenET data that was retrieved from google earth engine using script 0
 # by making clipped dfs by month and year. 
 
+# Using the OpenET data, it creates the grid that all other data will also be resampled to based
+# on the chosen study area. 
+
 library(raster)
 library(data.table)
 library(here)
@@ -36,10 +39,6 @@ clip_resample_save <- function(month, year){
   # clip
   r <- mask(r, study_area) %>% crop(study_area)
   print("raster clipped")
-  
-  # resample
-  raster_r <- r %>% resample(grid, method = "bilinear")
-  print("raster resampled")
   
   # save
   writeRaster(x = raster_r, filename = here(intermediate_openet_path, paste0(month, "-", year, ".tif")))
