@@ -10,8 +10,6 @@
 
 library(here)
 
-study_area = FALSE
-
 # function to retrieve the path of the directory the file resides in
 directory_path <- function(filepath){
   return(sub('[/][^/]+$', '', filepath))
@@ -22,7 +20,7 @@ directory_path <- function(filepath){
 raw_openet_path <- here("data", "1_raw", "OpenET")
 
 # study area
-# generated in ET_agriculture repository. Basically just a 10km buffer around ag lands in the central valley. 
+# generated in 1_agriculture. Basically just a 10km buffer around ag lands in CA. 
 study_area_loc <- here("data", "1_raw", "study_area", "study_area.shp")
 
 # consistent grid -- study area

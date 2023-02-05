@@ -55,6 +55,14 @@ dwr_shps = lapply(years, process_dwr)
 # flatten all of the shapefiles
 DWR_flat = st_union(dwr_shps)
 
+# save the flattened version
+st_write(DWR_flat, here(flat_ag_shp_path, paste0("flat_ag.shp")))
+
+# make a buffered version for the study area
+buf <- st_transform(DWR_flat, "3310") %>% st_buffer(10000)
+dir.create(directory_path(study_area_loc), recursive = TRUE)
+st_write(buf, study_area_loc)
+
 # make a raster with 0 and 1 for where agriculture is present 
 CA_grid <- raster(grid_loc)
 
