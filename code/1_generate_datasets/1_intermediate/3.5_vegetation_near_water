@@ -1,0 +1,38 @@
+# This makes a mask for any vegetation within 500m of water according to FVEG. 
+# It then makes a dataframe with the pixels that are within 500m of water. 
+# Anna Boser 2/6/2023
+
+library(sf)
+library(raster)
+library(here)
+library(stringr)
+library(dplyr)
+
+source("file_paths.R")
+
+# consistent grid
+CA_grid <- raster(CA_grid_loc)
+
+# study area 
+study_area <- st_read(study_area_loc) %>% st_transform(st_crs(CA_grid))
+
+fveg <- raster(raw_fveg_loc)
+
+# key = c(1 = "CONIFER", 
+#         2 = "SHRUB", 
+#         3 = "HERBACEOUS", 
+#         4 = "BARREN/OTHER", 
+#         5 = "URBAN", 
+#         6 = "HARDWOOD", 
+#         7 = "WATER", 
+#         8 = "AGRICULTURE")
+
+# keep 7
+
+# make into a shapefile
+
+# add a buffer around water
+
+# resmaple to grid
+
+# make into data table
