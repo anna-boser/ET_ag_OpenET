@@ -7,16 +7,18 @@ library(raster)
 library(here)
 library(stringr)
 library(dplyr)
+library(fasterize)
 
 source("file_paths.R")
 
 # consistent grid
 CA_grid <- raster(CA_grid_loc)
 
-# study area 
-study_area <- st_read(study_area_loc) %>% st_transform(st_crs(CA_grid))
-
 fveg <- raster(raw_fveg_loc)
+
+# clip to study area
+study_area <- st_read(study_area_loc) %>% st_transform(st_crs(fveg)) # study area 
+fveg <- mask(fveg, study_area) %>% crop(study_area)
 
 # key = c(1 = "CONIFER", 
 #         2 = "SHRUB", 
@@ -28,11 +30,21 @@ fveg <- raster(raw_fveg_loc)
 #         8 = "AGRICULTURE")
 
 # keep 7
+values(fveg) <- ifelse(values(fveg) == 7, 1, 0)
 
 # make into a shapefile
 
+contour <- rasterToContour(fveg) %>% st_as_sf()
+contour <- filter(contour, level == 1)
+contour <- st_polygonize(contour)
+
 # add a buffer around water
+fveg_buff <- st_buffer(contour, 500) # 500m
 
 # resmaple to grid
+fveg_buff <- fveg_buff %>% st_transform(st_crs(CA_grid))
+water_buff <- fasterize(fveg_buff, CA_grid)
 
 # make into data table
+df <- water_buff %>% as.data.frame(xy=TRUE) %>% filter(!(is.na(layer)))
+write.csv(df, water_buffer_loc)
