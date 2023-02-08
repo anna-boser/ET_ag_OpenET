@@ -160,6 +160,7 @@ county_table_loc <- here("data", "4_for_analysis", "additional_data", "counties.
 # A table with the location of a pixel and its crop type, sub crop type, and if multiple crops are grown on that pixel.
 # Pure pixels only. 
 # created in 1_generate_datasets/1_intermediate/additional_data/2_crops.R
+crops_dwr_table_path <- here("data", "4_for_analysis", "additional_data") # for the seperate years
 crops_dwr_table_loc <- here("data", "4_for_analysis", "additional_data", "crops_all_dwr_fallow.csv")
 
 # Same table as crops_dwr_table_loc but with fallow fields filtered according to CDL
