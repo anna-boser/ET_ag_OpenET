@@ -49,7 +49,7 @@ intermediate_openet_path <- here("data", "2_intermediate", "OpenET")
 
 # raw landiq/dwr agriculture data
 # from https://data.cnra.ca.gov/dataset/6c3d65e3-35bb-49e1-a51e-49d5a2cf09a9/resource/1da7b37a-dd97-4b69-a86a-fe824a252eaf/download/i15_crop_mapping_2019.zip
-raw_dwr_loc <- here("data", "1_raw", "DWR", "i15_Crop_Mapping_2019.shp")
+raw_dwr_path <- here("data", "1_raw", "DWR")
 
 # flat ag shapefile where agriculture is in CA
 # created in 1_generate_datasets/1_intermediate/agriculture.R

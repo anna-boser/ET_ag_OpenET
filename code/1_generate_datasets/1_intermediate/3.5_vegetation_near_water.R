@@ -8,11 +8,14 @@ library(here)
 library(stringr)
 library(dplyr)
 library(fasterize)
+library(dplyr)
 
 source("file_paths.R")
 
+buffer = 1000 # in meters
+
 # consistent grid
-CA_grid <- raster(CA_grid_loc)
+grid <- raster(grid_loc)
 
 fveg <- raster(raw_fveg_loc)
 
@@ -39,7 +42,8 @@ contour <- filter(contour, level == 1)
 contour <- st_polygonize(contour)
 
 # add a buffer around water
-fveg_buff <- st_buffer(contour, 500) # 500m
+fveg_buff <- st_buffer(contour, buffer) 
+st_write(fveg_buff, here(water_buffer_path, paste0("water_buffer_", buffer, ".shp")))
 
 # resmaple to grid
 fveg_buff <- fveg_buff %>% st_transform(st_crs(CA_grid))
@@ -47,4 +51,4 @@ water_buff <- fasterize(fveg_buff, CA_grid)
 
 # make into data table
 df <- water_buff %>% as.data.frame(xy=TRUE) %>% filter(!(is.na(layer)))
-write.csv(df, water_buffer_loc)
+write.csv(df, here(water_buffer_path, paste0("water_buffer_", buffer, ".shp")))
