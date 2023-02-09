@@ -136,4 +136,4 @@ get_croptypes <- function(year){
 }
 
 all_years <- rbindlist(lapply(years, get_croptypes))
-fwrite(all_years, file = here(crops_dwr_table_path, paste0("crops_all_dwr_fallow.csv")), append = FALSE)
+fwrite(all_years, file = here(crops_dwr_table_loc), append = FALSE)
