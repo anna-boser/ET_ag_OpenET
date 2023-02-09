@@ -15,8 +15,9 @@ model = MyModel(experiment_name="fveg_1-24_gb",
                 regressor=HistGradientBoostingRegressor(verbose=1, random_state=0), 
                 nans_ok=False,
                 month=True,
+                year=True,
                 features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "PET"], #"x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET" 
-                hparam=False)
+                hparam=False) # hparam tuning only supported for gradient boosting regressor. 
 
 # second, perform a cross-validation using the test set
 model.crossval(train_or_test="test")

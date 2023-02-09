@@ -10,7 +10,7 @@ import time
 
 class MyModel():
 
-    def __init__(self, experiment_name, dataset, regressor, nans_ok=False, month=True, features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], hparam=False):
+    def __init__(self, experiment_name, dataset, regressor, nans_ok=False, month=True, year=True, features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], hparam=False):
 
         # locate the natural and agricultural datasets you may want to use
         self.train_data_loc = str(here("data/3_for_counterfactual/training_data/train")) + "/" + dataset + ".csv"
@@ -25,6 +25,7 @@ class MyModel():
         self.experiment_name = experiment_name
         self.experiment_path = str(here("data/4_for_analysis/ML_outputs/experiments")) + "/" + experiment_name
         self.month = month
+        self.year = year
 
         if not os.path.exists(self.experiment_path):
             os.makedirs(self.experiment_path)
@@ -55,6 +56,11 @@ class MyModel():
             df = pd.get_dummies(df, columns=["month"])
             X_months = df[df.columns[df.columns.str.startswith("month")]]
             X = pd.concat([X, X_months], join = 'outer', axis = 1)
+
+        if self.year:
+            df = pd.get_dummies(df, columns=["year"])
+            X_years = df[df.columns[df.columns.str.startswith("year")]]
+            X = pd.concat([X, X_years], join = 'outer', axis = 1)
 
         # retrieve the parameters..?
         if self.hparam==True:
@@ -131,6 +137,10 @@ class MyModel():
             X_months = df[df.columns[df.columns.str.startswith("month")]]
             X = pd.concat([X, X_months], join = 'outer', axis = 1)
 
+        if self.year:
+            df = pd.get_dummies(df, columns=["year"])
+            X_years = df[df.columns[df.columns.str.startswith("year")]]
+            X = pd.concat([X, X_years], join = 'outer', axis = 1)
 
         if self.hparam==True:
             # retrieve the parameters that were generated in 3_hyperparameter_tuning
@@ -169,6 +179,11 @@ class MyModel():
             df = pd.get_dummies(df, columns=["month"])
             X_months = df[df.columns[df.columns.str.startswith("month")]]
             X = pd.concat([X, X_months], join = 'outer', axis = 1)
+
+        if self.year:
+            df = pd.get_dummies(df, columns=["year"])
+            X_years = df[df.columns[df.columns.str.startswith("year")]]
+            X = pd.concat([X, X_years], join = 'outer', axis = 1)
 
         y_pred = self.regressor.predict(X)
         df = df.assign(ET_pred=y_pred)
