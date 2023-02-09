@@ -199,4 +199,4 @@ crop_value_loc <- here("data", "1_raw", "USDA_NASS_State_of_Ag", "crop_value.csv
 
 # water buffer dataset
 # created in 3.5_vegetation_near_water.R
-water_buffer_loc <- here("data", "2_intermediate", "vegetation", "water_buffer.csv")
+water_buffer_path <- here("data", "2_intermediate", "vegetation")
