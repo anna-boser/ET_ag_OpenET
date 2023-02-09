@@ -69,8 +69,9 @@ add_month <- function(month, dataset, year){
   return(dataset)
 }
 
+time_varrying_df <- data.table()
 for (year in years){
-  time_varrying_df <- rbindlist(lapply(months, add_month, dataset=study_area_df, year=year))
+  time_varrying_df <- rbind(time_varrying_df, rbindlist(lapply(months, add_month, dataset=study_area_df, year=year)))
 }
 
 # filter out NAs for ET 
