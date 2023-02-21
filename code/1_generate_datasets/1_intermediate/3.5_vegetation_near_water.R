@@ -43,12 +43,12 @@ contour <- st_polygonize(contour)
 
 # add a buffer around water
 fveg_buff <- st_buffer(contour, buffer) 
-st_write(fveg_buff, here(water_buffer_path, paste0("water_buffer_", buffer, ".shp")))
+st_write(fveg_buff, here(water_buffer_path, paste0("water_buffer_", buffer, ".shp")), append=FALSE)
 
 # resmaple to grid
-fveg_buff <- fveg_buff %>% st_transform(st_crs(CA_grid))
-water_buff <- fasterize(fveg_buff, CA_grid)
+fveg_buff <- fveg_buff %>% st_transform(st_crs(grid))
+water_buff <- fasterize(fveg_buff, grid)
 
 # make into data table
 df <- water_buff %>% as.data.frame(xy=TRUE) %>% filter(!(is.na(layer)))
-write.csv(df, here(water_buffer_path, paste0("water_buffer_", buffer, ".shp")))
+write.csv(df, here(water_buffer_path, paste0("water_buffer_", buffer, ".csv")), append = FALSE)
