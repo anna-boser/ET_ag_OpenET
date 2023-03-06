@@ -40,8 +40,8 @@ if (years_ts){
 fwrite(data, here(experiment_path, "agriculture_tidy.csv"))
 
 # save a version with only fallow lands
-fallow <- filter(data, CLASS2 == "X")
-fwrite(data, here(experiment_path, "fallow.csv"))
+fallow <- filter(data, cropnames %in% c("Unclassified fallow", "Idle"))
+fwrite(fallow, here(experiment_path, "fallow.csv"))
 
 if (months_ts == TRUE | years_ts == TRUE){
   # Average over months/years
