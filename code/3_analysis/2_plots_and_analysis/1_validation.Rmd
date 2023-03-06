@@ -19,7 +19,7 @@ source(here("file_paths.R"))
 ```
 
 ```{r}
-experiment_name <- "fveg_1-24_gb"
+experiment_name <- "fveg_water_buffer1000_2-10_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 dataset <- "fveg"
 months_ts <- TRUE
@@ -36,6 +36,13 @@ if (months_ts){
   months <- select(fallow, names(fallow)[grepl("month", names(fallow))])
   fallow$month <- names(months)[max.col(months)] 
   fallow$month <- str_extract(fallow$month, '(?<=_)\\d+') %>% as.numeric()
+}
+
+if (years_ts){
+  # get a nice column of numeric years
+  years <- select(fallow, names(fallow)[grepl("year", names(fallow))])
+  fallow$year <- names(years)[max.col(years)] 
+  fallow$year <- str_extract(fallow$year, '(?<=_)\\d+') %>% as.numeric()
 }
 ```
 
@@ -318,8 +325,8 @@ if (months_ts){
     # annotate("text", x=4.5, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
     xlab("Predicted natural ET (mm/month)") + 
     ylab("Observed fallow ET (mm/month)") +
-    xlim(c(0,8)) + 
-    ylim(c(0,8))
+    xlim(c(0,8*30)) + 
+    ylim(c(0,8*30))
 }
 
 print(paste("R2:", round(r2, 3), "Bias:", round(Bias, 3)))
