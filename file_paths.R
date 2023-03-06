@@ -98,6 +98,14 @@ raw_fveg_loc <- here("data", "1_raw", "FVEG", "fveg_lifeform.tif")
 ca_fveg_loc <- here("data", "2_intermediate", "vegetation", "ca_fveg.tif")
 fveg_loc <- here("data", "2_intermediate", "vegetation", "fveg.tif")
 
+# a shapefile of wetland boundaries in the delta
+# manually generated using QGIS to remove wetlands from FVEG
+raw_wetlands_loc <- here("data", "1_raw", "wetlands", "wetlands.shp")
+
+# the above shapefile turned into pixels that overlap it
+# generated in 3.25_wetlands.R
+wetlands_loc <- here("data", "2_intermediate", "wetlands", "wetlands.csv")
+
 # Raw PET data
 # https://data.bris.ac.uk/data/dataset/qb8ujazzda0s2aykkv0oq0ctp
 raw_PET_path <- here("data", "1_raw", "PET")
