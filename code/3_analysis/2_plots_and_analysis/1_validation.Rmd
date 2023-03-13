@@ -14,15 +14,16 @@ library(stringr)
 library(ggplot2)
 library(sf)
 library(latex2exp)
+library(lfe)
 
 source(here("file_paths.R"))
 ```
 
 ```{r}
-experiment_name <- "fveg_water_buffer1000_2-10_gb"
+experiment_name <- "fveg_no_wetlands_2-12_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 dataset <- "fveg"
-months_ts <- TRUE
+training <- TRUE
 ```
 
 # ET over fallow lands vs predictions
@@ -31,49 +32,226 @@ months_ts <- TRUE
 fallow <- fread(here(experiment_path, "fallow.csv"))
 fallow[fallow == -9999] <- NA # this is the na value
 
-if (months_ts){
-  # get a nice column of numeric months
-  months <- select(fallow, names(fallow)[grepl("month", names(fallow))])
-  fallow$month <- names(months)[max.col(months)] 
-  fallow$month <- str_extract(fallow$month, '(?<=_)\\d+') %>% as.numeric()
-}
-
-if (years_ts){
-  # get a nice column of numeric years
-  years <- select(fallow, names(fallow)[grepl("year", names(fallow))])
-  fallow$year <- names(years)[max.col(years)] 
-  fallow$year <- str_extract(fallow$year, '(?<=_)\\d+') %>% as.numeric()
+# split the fallow data into val and test
+set.seed(0) # always get the same "random" split
+if (training){
+  full <- fallow
+  locs <- unique(paste(fallow$x, fallow$y, sep = ","))
+  locs <- locs[sample(1:length(locs), length(locs)/10)] # keep a tenth of the locations
+  fallow <- filter(fallow, paste(fallow$x, fallow$y, sep = ",") %in% locs)
 }
 ```
 
-### A scatterplot with colors by month
+# in order to get CIs, I need clustered errors
 ```{r}
-if (months_ts){
-  # with different months
-  r2 <- summary(lm(ET~ET_pred, data=fallow))$r.squared 
-  Bias <- mean(fallow$ET_pred - fallow$ET, na.rm=TRUE)
-  ggplot(fallow) +
-    geom_jitter(aes(x=ET_pred, y=ET, color=as.factor(month)), alpha=0.2, size =.1) + 
-    theme_classic() + 
-    geom_abline(intercept=0,slope=1, color="red") + 
-    # annotate("text", x=4, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
-    xlab("Predicted natural ET (mm/month)") + 
-    ylab("Observed fallow ET (mm/month)") +
-    xlim(c(0,6*30)) + 
-    ylim(c(0,6*30))
-  }
-print(paste("R2:", round(r2, 3), "Bias:", round(Bias, 3)))
+assign_cluster <- function(x, y, dist){
+  
+  x_size = dist/89 # 1 degree lon (x) = 89km = 89000m
+  y_size = dist/111 # 1 degree lat (y) = 111km = 111000m
+  
+  x_fold = floor(x/x_size)*x_size
+  y_fold = floor(y/y_size)*y_size
+  
+  cv_fold = paste(x_fold, y_fold, sep = ",")
+  
+  return(cv_fold)
+}
+
+fallow$cluster <- mapply(assign_cluster, fallow$x, fallow$y, 75*6)
 ```
+
+
+# Get confidence intervals using clustered standard errors for: 
+1. county
+2. year
+3. month
+```{r}
+fallow$year_f <- as.factor(fallow$year)
+fallow$month_f <- as.factor(fallow$month)
+# get confidence intervals using clustered standard errors
+county <- felm(ag_ET~NAME-1 | 0 | 0 | cluster+year_f+month_f, fallow) # -1 mean no intercept
+year <- felm(ag_ET~year_f-1 | 0 | 0 | cluster+month_f, fallow)
+month <- felm(ag_ET~month_f-1 | 0 | 0 | cluster+year_f, fallow)
+overall <- felm(ag_ET~1 | 0 | 0 | cluster, fallow)
+
+# demeaned
+fallow$ag_ET_dem = fallow$ag_ET + overall$coefficients[1]
+county_dem <- felm(ag_ET_dem~NAME-1 | 0 | 0 | cluster+year_f+month_f, fallow) 
+year_dem <- felm(ag_ET_dem~year_f-1 | 0 | 0 | cluster+month_f, fallow)
+month_dem <- felm(ag_ET_dem~month_f-1 | 0 | 0 | cluster+year_f, fallow)
+```
+
+```{r}
+# extract the mean and ci values from each
+ts_from_felm <- function(input_lm){
+  ET_df <- as.data.frame(cbind(input_lm$coefficients, input_lm$cse))
+  colnames(ET_df) <- c("ET", "se")
+  ET_df$min <- ET_df$ET-(1.96*ET_df$se)
+  ET_df$max <- ET_df$ET+(1.96*ET_df$se)
+  ET_df$month <- as.numeric(substring(rownames(ET_df), 8))
+  return(ET_df)
+}
+
+ET_df <- ts_from_felm(felm(ET~month_f-1 | 0 | 0 | cluster+year, fallow))
+ET_df$type = "Observed ET"
+ET_pred_df <- ts_from_felm(felm(ET_pred~month_f-1 | 0 | 0 | cluster+year, fallow))
+ET_pred_df$type = "Simulated natural ET"
+ts <- rbind(ET_df, ET_pred_df)
+
+scalar = 1 # 1.2 turns mm/month to cm/year
+
+ggplot(ts, aes(x = month)) + 
+  geom_line(aes(y = ET*scalar, col = type)) + 
+  geom_ribbon(aes(ymax = min*scalar, ymin = max*scalar, fill = type), alpha = .2)
+
+ts_bias <- ts_from_felm(felm(ag_ET~month_f-1 | 0 | 0 | cluster+year, fallow))
+ggplot(ts_bias, aes(x = month)) + 
+  geom_line(aes(y = ET*scalar)) + 
+  geom_ribbon(aes(ymax = min*scalar, ymin = max*scalar), alpha = .2)
+```
+
+# plot in space
+```{r}
+study_area <- st_read(study_area_loc) %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
+counties <- st_read(counties_loc) %>% filter(STATEFP == "06") %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
+
+loc_df <- fallow %>% group_by(x,y) %>% summarise(ag_ET = mean(ag_ET), 
+                                       ET = mean(ET), 
+                                       ET_pred = mean(ET_pred)) 
+loc_df %>%
+  ggplot() + 
+  geom_sf(data = counties, color=alpha("white",1), size = .2) + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  xlim(c(-122.92, -118)) + 
+  ylim(c(34.7, 40.754)) + 
+  geom_point(aes(x=x,y=y,col=ag_ET), size = .1) + 
+  scale_color_distiller(palette="RdBu") + 
+  theme_void() + 
+  ggtitle("fallow ag ET")
+
+loc_df %>%
+  ggplot() + 
+  geom_sf(data = counties, color=alpha("white",1), size = .2) + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  xlim(c(-122.92, -118)) + 
+  ylim(c(34.7, 40.754)) + 
+  geom_point(aes(x=x,y=y,col=ET), size = .1) + 
+  scale_color_distiller(palette="RdBu") + 
+  theme_void() + 
+  ggtitle("fallow observed ET")
+
+loc_df %>%
+  ggplot() + 
+  geom_sf(data = counties, color=alpha("white",1), size = .2) + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  xlim(c(-122.92, -118)) + 
+  ylim(c(34.7, 40.754)) + 
+  geom_point(aes(x=x,y=y,col=ET_pred), size = .1) + 
+  scale_color_distiller(palette="RdBu") + 
+  theme_void() + 
+  ggtitle("fallow pred ET")
+```
+
+
+```{r}
+# how to clean fallow data
+# I want to remove outliers that are actually ag -- so focus on growing season
+
+loc_df <- fallow %>% filter(month %in% c(7,8,9)) %>%
+  group_by(x,y,year) %>% summarise(ag_ET = mean(ag_ET), 
+                                       ET = mean(ET), 
+                                       ET_pred = mean(ET_pred)) 
+
+loc_df %>%
+  ggplot() + 
+  geom_sf(data = counties, color=alpha("white",1), size = .2) + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  xlim(c(-122.92, -118)) + 
+  ylim(c(34.7, 40.754)) + 
+  geom_point(aes(x=x,y=y,col=ET), size = .1) + 
+  scale_color_distiller(palette="RdBu") + 
+  theme_void() + 
+  ggtitle("fallow observed ET")
+  
+  loc_df <- fallow %>% filter(month %in% c(3,4)) %>%
+  group_by(x,y,year) %>% summarise(ag_ET = mean(ag_ET), 
+                                       ET = mean(ET), 
+                                       ET_pred = mean(ET_pred)) 
+  
+  loc_df %>%
+  ggplot() + 
+  geom_sf(data = counties, color=alpha("white",1), size = .2) + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  xlim(c(-122.92, -118)) + 
+  ylim(c(34.7, 40.754)) + 
+  geom_point(aes(x=x,y=y,col=ET), size = .1) + 
+  scale_color_distiller(palette="RdBu") + 
+  theme_void() + 
+  ggtitle("fallow observed ET")
+  
+df8 <- fallow %>% filter(month == 8) %>% select(x, y, year, august = ET)
+loc_df <- fallow %>% filter(!(month %in% c(6,7,8,9)))%>% group_by(x,y,year) %>% summarise(ET = mean(ET)) 
+loc_df <- merge(loc_df, df8, by = c("x", "y", "year"))
+loc_df$prop8 <- loc_df$august/loc_df$ET
+  
+  loc_df %>%
+  ggplot() + 
+  geom_sf(data = counties, color=alpha("white",1), size = .2) + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  xlim(c(-122.92, -118)) + 
+  ylim(c(34.7, 40.754)) + 
+  geom_point(aes(x=x,y=y,col=prop8), size = .1) + 
+  scale_color_distiller(palette="RdBu") + 
+  theme_void() + 
+  ggtitle("fallow observed ET")
+```
+
+################################################################################
+# filtered fallow here
+```{r}
+# filter out the 95% highest in the growing season
+gs <- filter(fallow, month %in% c(7,8,9)) %>%
+  group_by(x,y,year) %>% summarise(ET = mean(ET)) 
+cutoff <- quantile(gs$ET, probs = seq(0,1,.95))[2]
+low_gs <- gs[gs$ET < cutoff,]
+
+
+filtered_fallow <- fallow %>% filter(paste(fallow$x, fallow$y, fallow$year) %in% paste(low_gs$x, low_gs$y, low_gs$year))
+
+loc_df <- filtered_fallow %>% 
+  group_by(x,y,year) %>% summarise(ag_ET = mean(ag_ET), 
+                                       ET = mean(ET), 
+                                       ET_pred = mean(ET_pred)) 
+
+low_gs %>%
+  ggplot() + 
+  geom_sf(data = counties, color=alpha("white",1), size = .2) + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  xlim(c(-122.92, -118)) + 
+  ylim(c(34.7, 40.754)) + 
+  geom_point(aes(x=x,y=y,col=ET), size = .1) + 
+  scale_color_distiller(palette="RdBu") + 
+  theme_void() + 
+  ggtitle("fallow observed ET")
+
+loc_df %>%
+  ggplot() + 
+  geom_sf(data = counties, color=alpha("white",1), size = .2) + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  xlim(c(-122.92, -118)) + 
+  ylim(c(34.7, 40.754)) + 
+  geom_point(aes(x=x,y=y,col=ET), size = .1) + 
+  scale_color_distiller(palette="RdBu") + 
+  theme_void() + 
+  ggtitle("fallow observed ET")
+```
+
 
 ### A scatterplot with months averaged out
 ```{r}
-if (months_ts){
-  # averaging over different months
-  fallow_year <- fallow %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
-                                                         ET_pred = mean(ET_pred, na.rm=TRUE))
-} else {
-  fallow_year <- fallow
-}
+# averaging over different months
+fallow_year <- fallow %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
+                                                       ET_pred = mean(ET_pred, na.rm=TRUE))
 
 r2 <- summary(lm(ET~ET_pred, data=fallow_year))$r.squared 
 Bias <- mean(fallow_year$ET_pred - fallow_year$ET, na.rm=TRUE)
@@ -92,15 +270,15 @@ print(paste("R2:", round(r2, 3), "Bias:", round(Bias, 3)))
 
 ### A time series 
 ```{r}
-if (months_ts){
-  # plot out the time series
-  fallow_ts <- fallow %>% group_by(month) %>% summarize(ET = mean(ET, na.rm=TRUE), 
-                                                         ET_pred = mean(ET_pred, na.rm=TRUE))
-  
-  ggplot(fallow_ts) + 
-    geom_line(aes(x=month, y=ET), color="red") + 
-    geom_line(aes(x=month, y=ET_pred), color="black") 
-}
+
+# plot out the time series
+fallow_ts <- fallow %>% group_by(month) %>% summarize(ET = mean(ET, na.rm=TRUE), 
+                                                       ET_pred = mean(ET_pred, na.rm=TRUE))
+
+ggplot(fallow_ts) + 
+  geom_line(aes(x=month, y=ET), color="red") + 
+  geom_line(aes(x=month, y=ET_pred), color="black") 
+
 ```
 
 Here I just got curious about what ag ET vs fallow ET look like. Seems like fallow ET is probably artificially high. 

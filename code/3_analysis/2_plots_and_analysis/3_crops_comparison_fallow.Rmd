@@ -29,7 +29,7 @@ avg_irr <- 1.97*30 # irrigation efficiency in mm/month spread over the year (mm/
 
 ## Read in the data
 ```{r}
-experiment_name <- "fveg_no_wetlands_2-12_gb"
+experiment_name <- "fallow_3-9_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 months_ts <- TRUE
 ```
@@ -38,7 +38,7 @@ months_ts <- TRUE
 data <- fread(file = here(experiment_path, "agriculture_tidy.csv"))
 ```
 
-# add crop type information 
+# clean data
 ```{r}
 data <- data[cropnames != "",] # only keep data that has crop info (get rid of years without dwr data)
 data <- data[cropnames != "Urban - residential, commercial, and industrial, unsegregated",] # remove urban
@@ -103,7 +103,7 @@ assign_cluster <- function(x, y, year, dist){
   return(cv_fold)
 }
 
-data$cluster <- mapply(assign_cluster, data$x, data$y, data$year, 50)
+data$cluster <- mapply(assign_cluster, data$x, data$y, data$year, 75)
 ```
 
 
@@ -224,9 +224,25 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(cropnames, ET))) +
 #         legend.title=element_blank()) 
 ```
 
-regressions to see how much is explained by crops and crops+climate
+# boxplot to show spread in how much a given crop consumes
 ```{r}
-felm(ag_ET~cropnames | 0 | 0 | cluster, data) %>% summary()
-felm(ag_ET~cropnames+PET | 0 | 0 | cluster, data) %>% summary()
-felm(ag_ET~cropnames+ET_pred | 0 | 0 | cluster, data) %>% summary()
+ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(cropnames, ET))) + 
+  geom_violin(data=data, aes(y=ag_ET))
+
+# what about after controlling for PET/
 ```
+
+
+# are there some people that consume way more than others, even contolling for crop type and climate? How about location (use county)?
+```{r}
+felm(ag_ET~cropnames | 0 | 0 | cluster+year, data) %>% summary()
+felm(ag_ET~cropnames+PET | 0 | 0 | cluster+year, data) %>% summary()
+felm(ag_ET~cropnames+ET_pred | 0 | 0 | cluster+year, data) %>% summary()
+felm(ag_ET~cropnames+ET_pred+NAME | 0 | 0 | cluster+year, data) %>% summary()
+```
+
+# if all farmers that consume above average for their crop type, county, and ET_pred on any given year only consumed average, how much water would we save? 
+```{r}
+
+```
+

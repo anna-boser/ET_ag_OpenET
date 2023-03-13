@@ -1,0 +1,176 @@
+---
+title: "Visualize experiments"
+author: "Anna Boser"
+date: "2022-11-17"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(data.table)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(sf)
+library(latex2exp)
+library(lfe)
+library(tidyr)
+
+source(here("file_paths.R"))
+```
+
+```{r}
+experiment_name <- "fallow_3-9_gb"
+experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+# dataset <- "fallow"
+dataset <- "val" # val or test
+tidy <- FALSE
+```
+
+# ET over fallow lands vs predictions
+```{r}
+# read in the fallow fields predictions
+data <- fread(here(experiment_path, paste0("fallow_", dataset, ".csv")))
+data[data == -9999] <- NA # this is the na value
+
+if (tidy == FALSE){
+  # get a nice column of numeric months
+  months <- select(data, names(data)[grepl("month", names(data))])
+  data$month <- names(months)[max.col(months)] 
+  data$month <- str_extract(data$month, '(?<=_)\\d+') %>% as.numeric()
+  data <- select(data, !names(data)[grepl("month_", names(data))])
+
+  # get a nice column of numeric years
+  years <- select(data, names(data)[grepl("year", names(data))])
+  data$year <- names(years)[max.col(years)] 
+  data$year <- str_extract(data$year, '(?<=_)\\d+') %>% as.numeric()
+  data <- select(data, !names(data)[grepl("year_", names(data))])
+}
+```
+
+### A scatterplot with months averaged out
+```{r}
+# averaging over different months
+data_year <- data %>% group_by(x, y, year) %>% summarize(ET = mean(ET, na.rm=TRUE), 
+                                                       ET_pred = mean(ET_pred, na.rm=TRUE))
+
+r2 <- summary(lm(ET~ET_pred, data=data_year))$r.squared 
+Bias <- mean(data_year$ET_pred - data_year$ET, na.rm=TRUE)
+RMSE <- sqrt(mean((data_year$ET_pred - data_year$ET)^2, na.rm=TRUE))
+MAE <- mean(abs(data_year$ET_pred - data_year$ET), na.rm=TRUE)
+ggplot(data_year) +
+  geom_abline(intercept=0,slope=1, color="grey") + 
+  geom_jitter(aes(x=ET_pred, y=ET), alpha=0.2, size =.1) + 
+  theme_classic() + 
+  geom_smooth(aes(x=ET_pred, y=ET), method = lm, se = TRUE) +
+  # annotate("text", x=3, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
+  xlab("Predicted natural ET (mm/month)") + 
+  ylab("Observed fallow ET (mm/month)") +
+    xlim(c(0,85)) + 
+    ylim(c(0,85))
+
+print(paste("R2:", round(r2, 3), "Bias:", round(Bias, 3), "RMSE:", round(RMSE, 3), "MAE:", round(MAE, 3)))
+```
+
+# plot in space
+```{r}
+study_area <- st_read(study_area_loc) %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
+counties <- st_read(counties_loc) %>% filter(STATEFP == "06") %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
+
+loc_df <- data %>% group_by(x,y) %>% summarise(Bias = -mean(ag_ET), 
+                                       ET = mean(ET), 
+                                       ET_pred = mean(ET_pred)) %>%
+  pivot_longer(cols=c("Bias", "ET", "ET_pred"), names_to = "type", values_to = "ET")
+
+loc_df %>% filter(type %in% c("ET", "ET_pred")) %>%
+  ggplot() + 
+  geom_sf(data = counties, color=alpha("white",1), fill=alpha("grey",1), size = .2) + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  xlim(c(-122.92, -118)) + 
+  ylim(c(34.7, 40.754)) + 
+  geom_point(aes(x=x,y=y,col=ET), size = .1) + 
+  facet_grid(cols = vars(type)) + 
+  scale_color_distiller(palette="RdBu") + 
+  theme_void()
+  
+loc_df %>% filter(type %in% c("Bias")) %>%
+  ggplot() + 
+  geom_sf(data = counties, color=alpha("white",1), fill=alpha("grey",1), size = .2) + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  xlim(c(-122.92, -118)) + 
+  ylim(c(34.7, 40.754)) + 
+  geom_point(aes(x=x,y=y,col=ET), size = .1) + 
+  facet_grid(cols = vars(type)) + 
+  scale_color_distiller(palette="RdBu", limits = c(-55, 55)) + 
+  theme_void()
+```
+
+# in order to get CIs, I need clustered errors
+```{r}
+assign_cluster <- function(x, y, dist){
+  
+  x_size = dist/89 # 1 degree lon (x) = 89km = 89000m
+  y_size = dist/111 # 1 degree lat (y) = 111km = 111000m
+  
+  x_fold = floor(x/x_size)*x_size
+  y_fold = floor(y/y_size)*y_size
+  
+  cv_fold = paste(x_fold, y_fold, sep = ",")
+  
+  return(cv_fold)
+}
+
+data$cluster <- mapply(assign_cluster, data$x, data$y, 75)
+```
+
+
+# Get confidence intervals using clustered standard errors for: 
+1. county
+2. year
+3. month
+```{r}
+data$year_f <- as.factor(data$year)
+data$month_f <- as.factor(data$month)
+# get confidence intervals using clustered standard errors
+county <- felm(ag_ET~NAME-1 | 0 | 0 | cluster+year_f+month_f, data) # -1 means no intercept
+year <- felm(ag_ET~year_f-1 | 0 | 0 | cluster+month_f, data)
+month <- felm(ag_ET~month_f-1 | 0 | 0 | cluster+year_f, data)
+overall <- felm(ag_ET~1 | 0 | 0 | cluster, data)
+
+summary(overall)
+summary(county)
+summary(year)
+summary(month)
+```
+
+```{r}
+# extract the mean and ci values from each
+ts_from_felm <- function(input_lm){
+  ET_df <- as.data.frame(cbind(input_lm$coefficients, input_lm$cse))
+  colnames(ET_df) <- c("ET", "se")
+  ET_df$min <- ET_df$ET-(1.96*ET_df$se)
+  ET_df$max <- ET_df$ET+(1.96*ET_df$se)
+  ET_df$month <- as.numeric(substring(rownames(ET_df), 8))
+  return(ET_df)
+}
+
+ET_df <- ts_from_felm(felm(ET~month_f-1 | 0 | 0 | cluster+year, data))
+ET_df$type = "Observed ET"
+ET_pred_df <- ts_from_felm(felm(ET_pred~month_f-1 | 0 | 0 | cluster+year, data))
+ET_pred_df$type = "Simulated natural ET"
+ts <- rbind(ET_df, ET_pred_df)
+
+scalar = 1 # 1.2 turns mm/month to cm/year
+
+ggplot(ts, aes(x = month)) + 
+  geom_line(aes(y = ET*scalar, col = type)) + 
+  geom_ribbon(aes(ymax = min*scalar, ymin = max*scalar, fill = type), alpha = .2)
+
+ts_bias <- ts_from_felm(felm(ag_ET~month_f-1 | 0 | 0 | cluster+year, data))
+ggplot(ts_bias, aes(x = month)) + 
+  geom_line(aes(y = ET*scalar)) + 
+  geom_ribbon(aes(ymax = min*scalar, ymin = max*scalar), alpha = .2) +
+  xlab("Month") + 
+  ylab("ET (mm/month)")
+```
