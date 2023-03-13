@@ -12,8 +12,8 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 
 # first, define your model 
-model = MyModel(experiment_name="fvegg_water_buffer_2-7_gb", 
-                dataset="fveg_water_buffer", 
+model = MyModel(experiment_name="fallow_3-9_gb", 
+                dataset="fallow", 
                 regressor=GradientBoostingRegressor(verbose=1, random_state=0), 
                 nans_ok=False,
                 month=True,
@@ -22,9 +22,33 @@ model = MyModel(experiment_name="fvegg_water_buffer_2-7_gb",
                 hparam=False)
 
 # second, perform a cross-validation using the training set
-model.crossval(train_or_test="train")
+# model.crossval(train_or_test="train")
 
 # third, generate new predictions for fallow lands
 model.train_model(train_or_test="train")
-model.predictions(ag_or_fallow="fallow")
-model.predictions(ag_or_fallow="agriculture")
+model.predictions(ag_or_fallow="fallow_val")
+model.predictions(ag_or_fallow="fallow_test")
+model.predictions(ag_or_fallow="agriculture_dwr_years")
+# model.predictions(ag_or_fallow="fallow") # this no longer works ever since I don't have every year in as fallow since it creates a dummy for the year and then is missing columns. 
+
+# first, define your model 
+model = MyModel(experiment_name="fallow_no_controls_3-9_gb", 
+                dataset="fallow", 
+                regressor=GradientBoostingRegressor(verbose=1, random_state=0), 
+                nans_ok=False,
+                month=True,
+                year=True,
+                features=["x", "y"], #, "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 
+                hparam=False)
+
+# second, perform a cross-validation using the training set
+# model.crossval(train_or_test="train")
+
+# third, generate new predictions for fallow lands
+model.train_model(train_or_test="train")
+model.predictions(ag_or_fallow="fallow_val")
+model.predictions(ag_or_fallow="fallow_test")
+model.predictions(ag_or_fallow="fallow_test")
+model.predictions(ag_or_fallow="agriculture_dwr_years")
+# model.predictions(ag_or_fallow="fallow") # this no longer works ever since I don't have every year in as fallow since it creates a dummy for the year and then is missing columns. 
+

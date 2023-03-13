@@ -208,3 +208,13 @@ crop_value_loc <- here("data", "1_raw", "USDA_NASS_State_of_Ag", "crop_value.csv
 # water buffer dataset
 # created in 3.5_vegetation_near_water.R
 water_buffer_path <- here("data", "2_intermediate", "vegetation")
+
+# fallow train, validation, and test locations
+# splits created in 5_clean_and_split_fallow.R
+training_data_loc <- here("data", "3_for_counterfactual", "training_data", "train", "fallow.csv")
+val_data_loc <- here("data", "3_for_counterfactual", "agriculture", "fallow_val.csv")
+test_data_loc <- here("data", "3_for_counterfactual", "agriculture", "fallow_test.csv")
+
+# the agriculture dataset but only 2016, 2018, and 2019
+# created in 5_clean_and_split_fallow.R
+ag_dwr_years_loc <- here("data", "3_for_counterfactual", "agriculture", "agriculture_dwr_years.csv")

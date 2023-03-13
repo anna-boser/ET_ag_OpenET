@@ -15,8 +15,6 @@ class MyModel():
         # locate the natural and agricultural datasets you may want to use
         self.train_data_loc = str(here("data/3_for_counterfactual/training_data/train")) + "/" + dataset + ".csv"
         self.test_data_loc = str(here("data/3_for_counterfactual/training_data/test")) + "/" + dataset + ".csv"
-        self.fallow_data_loc = str(here("data/3_for_counterfactual/agriculture/fallow.csv"))
-        self.ag_data_loc = str(here("data/3_for_counterfactual/agriculture/agriculture.csv"))
 
         self.regressor = regressor
         self.nans_ok = nans_ok
@@ -161,12 +159,8 @@ class MyModel():
     def predictions(self, ag_or_fallow="agriculture"):
         
         # are you predicting over all agriculture or only fallow lands? 
-        if ag_or_fallow=="agriculture":
-            df = pd.read_csv(self.ag_data_loc)
-        elif ag_or_fallow=="fallow":
-            df = pd.read_csv(self.fallow_data_loc)
-        else: 
-            Exception("ag_or_fallow must be 'agriculture' or 'fallow'")
+        application_data_location = str(here("data/3_for_counterfactual/agriculture")) + "/" + ag_or_fallow + ".csv"
+        df = pd.read_csv(application_data_location)
 
         if self.nans_ok == False:
             df = df.fillna(-9999)

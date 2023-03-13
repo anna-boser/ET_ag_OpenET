@@ -19,16 +19,18 @@ source(here("file_paths.R"))
 ```
 
 ```{r}
-experiment_name <- "fveg_1-18_gb"
+experiment_name <- "fveg_water_buffer1000_2-10_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 dataset <- "fveg"
 months_ts <- TRUE
+years_ts <- TRUE
 ```
 
 # ET over fallow lands vs predictions
 ```{r}
 # read in the fallow fields predictions
 fallow <- fread(here(experiment_path, "fallow.csv"))
+
 fallow[fallow == -9999] <- NA # this is the na value
 
 if (months_ts){
@@ -37,25 +39,19 @@ if (months_ts){
   fallow$month <- names(months)[max.col(months)] 
   fallow$month <- str_extract(fallow$month, '(?<=_)\\d+') %>% as.numeric()
 }
+
+if (years_ts){
+  # get a nice column of numeric years
+  years <- select(fallow, names(fallow)[grepl("year", names(fallow))])
+  fallow$year <- names(years)[max.col(years)] 
+  fallow$year <- str_extract(fallow$year, '(?<=_)\\d+') %>% as.numeric()
+}
+
+# keep only validation set
+fallow <- filter(fallow, year == 2019)
 ```
 
-### A scatterplot with colors by month
-```{r}
-if (months_ts){
-  # with different months
-  r2 <- summary(lm(ET~ET_pred, data=fallow))$r.squared 
-  bias <- mean(fallow$ET_pred - fallow$ET, na.rm=TRUE)
-  ggplot(fallow) +
-    geom_jitter(aes(x=ET_pred, y=ET, color=as.factor(month)), alpha=0.2, size =.1) + 
-    theme_classic() + 
-    geom_abline(intercept=0,slope=1, color="red") + 
-    annotate("text", x=4*30, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
-    xlab("Predicted natural ET (mm/month)") + 
-    ylab("Observed fallow ET (mm/month)")
-  }
-```
-
-### A scatterplot with months averaged out
+### A scatterplot with months and years averaged out
 ```{r}
 if (months_ts){
   # averaging over different months
@@ -68,10 +64,10 @@ if (months_ts){
 r2 <- summary(lm(ET~ET_pred, data=fallow_year))$r.squared 
 bias <- mean(fallow_year$ET_pred - fallow_year$ET, na.rm=TRUE)
 ggplot(fallow_year) +
-  geom_jitter(aes(x=ET_pred, y=ET), alpha=0.2, size =.1) + 
+  geom_jitter(aes(x=ET_pred, y=ET, col=y), alpha=0.2, size =.1) + 
   theme_classic() + 
   geom_abline(intercept=0,slope=1, color="red") + 
-  annotate("text", x=3*30, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
+  annotate("text", x=2*30, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(bias, 3))) + 
   xlab("Predicted natural ET (mm/month)") + 
   ylab("Observed fallow ET (mm/month)")
 ```
@@ -102,6 +98,17 @@ Here I just got curious about what ag ET vs fallow ET look like. Seems like fall
 #   geom_line(data=fallow_ts, aes(x=month, y=ET), color="black")
 ```
 
+## fallow bias plotted out in space
+```{r}
+if (months_ts){
+  # plot out the time series
+  fallow_ts <- fallow %>% group_by(x,y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
+                                                         ET_pred = mean(ET_pred, na.rm=TRUE))
+  
+  ggplot(fallow_ts) + 
+    geom_point(aes(x=x, y=y, col=ET_pred-ET))
+}
+```
 
 # Spatial CV
 
