@@ -24,55 +24,67 @@ source(here("file_paths.R"))
 
 ## Read in the data
 ```{r}
-experiment_name <- "fveg_1-24_gb"
+experiment_name <- "fallow_3-9_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
-months_ts <- TRUE
 ```
 
 ```{r}
-data <- fread(file = here(experiment_path, "agriculture.csv"))
-
+data <- fread(file = here(experiment_path, "agriculture_yearly.csv"))
 data[data == -9999] <- NA # this is the na value
-
-if (months_ts){
-  # get a nice column of numeric months
-  months <- select(data, names(data)[grepl("month", names(data))])
-  data$month <- names(months)[max.col(months)] 
-  data$month <- str_extract(data$month, '(?<=_)\\d+') %>% as.numeric()
-}
 ```
 
 ```{r}
-if (months_ts == TRUE){
-  # Average over monthgroups
-  data <- data %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
-                                                  ET_pred = mean(ET_pred, na.rm=TRUE), 
-                                                  ag_ET = ET-ET_pred)
-}
+data <- data[cropnames != "Urban - residential, commercial, and industrial, unsegregated",] # remove urban
+data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow", data$cropnames) # rename unclassified
+
+# only keep fallow pixels that are in the test set
+test <- fread(test_data_loc)
+list <- unique(paste(test$x, test$y, test$year))
+nrow(data)
+data <- data %>% filter(!(cropnames == "Fallow" & !(paste(x, y, year) %in% list)))
+nrow(data)
+rm(test)
 ```
+
 
 ## histograms 
 ```{r}
-hist_data <- pivot_longer(data, cols=c(ET, ET_pred, ag_ET), names_to="type", values_to="ET")
+fallow <- filter(data, cropnames == "Fallow")
+hist_data <- filter(data, cropnames != "Fallow")
+
+hist_data <- pivot_longer(hist_data, cols=c(ET, ET_pred, ag_ET), names_to="type", values_to="ET")
 hist_data$type <- factor(hist_data$type, levels=c("ET", "ET_pred", "ag_ET"))
 
-# also include the original natural lands in the densities
-data_natural <- fread(here("data", "3_for_counterfactual", "training_data", "fveg.csv"))
+# if the the pixel is fallow, make "ET" called "fallow" instead
+fallow <- fallow %>% select(x, y, year, ET)
+fallow$type <- "fallow"
+hist_data <- hist_data %>% select(x, y, year, ET, type)
 
-if (months_ts){
-  # get a nice column of numeric months
-  months <- select(data_natural, names(data)[grepl("month", names(data))])
-  data_natural$month <- names(months)[max.col(months)] 
-  data_natural$month <- str_extract(data$month, '(?<=_)\\d+') %>% as.numeric()
-}
+hist_data <- rbind(hist_data, fallow)
 
-data_natural$type <- "natural"
+hist_data_full<- hist_data
+hist_data <- hist_data_full[sample(1:nrow(hist_data_full), 20000, rep=FALSE),]
 
-hist_data <- rbind(hist_data, data_natural)
+ggplot(hist_data) + 
+  geom_density(aes(x=ET, fill = type), lwd = 0, alpha = .4) + 
+  scale_fill_manual(name="", labels=c("Observed ET (on agricultural lands)", "Simulated fallow ET (on agricultural lands)", "Agricultural ET (on agricultural lands)", "Fallow ET (on fallow lands)"), values=c("navyblue", "darkgoldenrod4", "seagreen", "grey")) +
+  theme_classic() +  
+  theme(legend.position = c(0.75, 0.8),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank()) +
+  xlab("ET (mm/month)")
 ```
 
 
 ## Make maps of ET, ET_pred, and ag_ET
+
+```{r}
+# Average over years
+data <- data %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
+                                                ET_pred = mean(ET_pred, na.rm=TRUE), 
+                                                ag_ET = ET-ET_pred)
+```
 
 ```{r}
 data <- pivot_longer(data, cols=c(ET, ET_pred, ag_ET), names_to="type", values_to="ET")
@@ -86,16 +98,18 @@ counties <- st_read(counties_loc) %>% filter(STATEFP == "06") %>% st_transform(s
 ```
 
 ```{r}
-# data1 <- data[sample(nrow(data), size = 100000, replace = FALSE),] # subset for fast testing
+scalar = 1.2 # mm/month to cm/year
+# full_data <- data
+# data <- full_data[sample(nrow(full_data), size = 100000, replace = FALSE),] # subset for fast testing
 
-new.labs <- c("Observed ET", "Simulated natural ET", "Agricultural ET")
+new.labs <- c("Observed ET", "Simulated fallow ET", "Agricultural ET")
 names(new.labs) <- c("ET", "ET_pred", "ag_ET")
 
 ggplot() + 
   geom_sf(data = counties, color=alpha("white",1), size = .2) + 
-  geom_raster(data = data, aes(x=x, y=y, fill=ET)) +
+  geom_raster(data = data, aes(x=x, y=y, fill=ET*scalar)) +
   facet_grid(cols=vars(type), labeller = labeller(type = new.labs)) +
-  scale_fill_gradientn(name="ET (mm/month)", colours = c("darkgoldenrod4", "darkgoldenrod2", "khaki1", "lightgreen", "turquoise3", "deepskyblue3", "mediumblue", "navyblue", "midnightblue", "black")) + #, limits = c(-2.5, 8)) +
+  scale_fill_gradientn(name="ET (cm/year)", colours = c("darkgoldenrod2", "khaki1", "lightgreen",  "deepskyblue","mediumblue", "navyblue", "midnightblue", "black"), limits = c(-39.1, 234.6)) +
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   xlim(c(-122.92, -118.6)) + 
   ylim(c(34.94, 40.754)) + 
