@@ -35,6 +35,10 @@ irr_year <- 2015
 data <- fread(file = here(experiment_path, "agriculture_yearly.csv"))
 data[data == -9999] <- NA # this is the na value
 data <- filter(data, year == ET_year)
+
+data <- data[cropnames != "Urban - residential, commercial, and industrial, unsegregated",] # remove urban
+data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow", data$cropnames) # rename unclassified
+data <- filter(data, cropnames != "Fallow")
 ```
 
 Assign a cluster to get the proper standard errors

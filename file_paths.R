@@ -165,6 +165,14 @@ counties_loc <- here("data", "1_raw", "counties", "cb_2018_us_county_500k.shp")
 # created in 1_generate_datasets/1_intermediate/additional_data/1_counties.R
 county_table_loc <- here("data", "4_for_analysis", "additional_data", "counties.csv")
 
+# GSA shapefile
+# https://sgma.water.ca.gov/webgis/index.jsp?appid=gasmaster&rz=true
+gsa_loc <- here("data", "1_raw", "GSA", "GSA.shp")
+
+# a table with the location of a pixel and the GSA it belongs in
+# created in 1_generate_datasets/1_intermediate/additional_data/3_GSA.R
+gsa_table_loc <- here("data", "4_for_analysis", "additional_data", "GSA.csv")
+
 # A table with the location of a pixel and its crop type, sub crop type, and if multiple crops are grown on that pixel.
 # Pure pixels only. 
 # created in 1_generate_datasets/1_intermediate/additional_data/2_crops.R
