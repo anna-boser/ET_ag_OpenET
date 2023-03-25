@@ -1,0 +1,321 @@
+---
+title: "5_gsa_analysis"
+author: "Anna Boser"
+date: "2023-03-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sp)
+library(here)
+library(stringr)
+library(sf)
+#library(tmap)
+library(data.table)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(latex2exp)
+library(lfe)
+library(gstat)
+
+source(here("file_paths.R"))
+```
+
+## Read in the data
+```{r}
+experiment_name <- "fallow_3-9_gb"
+experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+data <- fread(file = here(experiment_path, "agriculture_yearly.csv"))
+```
+
+# clean data
+```{r}
+data <- filter(data, coverage_fraction>.5)
+
+data <- data[cropnames != "",] # only keep data that has crop info (get rid of years without dwr data)
+data <- data[cropnames != "Urban - residential, commercial, and industrial, unsegregated",] # remove urban
+data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow", data$cropnames) # rename unclassified fallow to just fallow
+
+# only keep fallow pixels that are in the test set
+test <- fread(test_data_loc)
+list <- unique(paste(test$x, test$y, test$year))
+nrow(data)
+data <- data %>% filter(!(cropnames == "Fallow" & !(paste(x, y, year) %in% list)))
+nrow(data)
+rm(test)
+
+data$subcropnames <- ifelse(data$subcropnames == "", data$cropnames, data$subcropnames)
+
+data$year <- as.factor(data$year)
+
+data <- filter(data,  subcropnames != "Greenhouse")
+
+# combine potatoes and "potatoes or sweet potato"
+data$subcropnames <- ifelse(data$subcropnames %in% c("Potatoes", "Potato or Sweet potato"), "Potato or Sweet potato", data$subcropnames)
+```
+
+```{r}
+# add GSA info
+# read in GSA info
+gsa <- fread(gsa_table_loc)
+
+# merge
+data$x <- round(data$x, 7)
+data$y <- round(data$y, 7)
+
+gsa$cell <- NULL
+gsa$coverage <- NULL
+gsa$x <- round(gsa$x, 7)
+gsa$y <- round(gsa$y, 7)
+
+data <- merge(data, gsa, by = c("x", "y"), all.x=TRUE)
+
+rm(gsa)
+```
+
+```{r}
+data <- filter(data, !is.na(GSA_Name))
+data <- filter(data, GSA_Name != "County of San Luis Obispo GSA - Paso Robles Area")
+data <- filter(data, cropnames != "Fallow")
+
+# get the total ag ET in each GSA and 20 percent of that
+GSA_water_use <- data %>% group_by(GSA_Name) %>% summarize(ag_ET = sum(ag_ET), 
+                                                           n = n(), 
+                                                           number_crops = length(unique(unlist(cropnames))))
+GSA_water_use$ag_ET_20_perc <- GSA_water_use$ag_ET*.2
+```
+
+
+# fallow potential
+```{r}
+# how many lands must go fallow to reach a 20% reduction in each GSA? 
+# I need to get the total ag ET in each GSA, calculate what 20% of that is, and then start at the highest consumer and keep adding until you get to that number. 
+
+# for each GSA, order the pixels and keep adding until you get to the number you need. 
+get_fraction_fallow <- function(GSA){
+  # get the target amount you need to reduce by
+  target <- filter(GSA_water_use, GSA_Name == GSA)$ag_ET_20_perc
+  # keep only pixels in your GSA
+  pixels <- data %>% filter(GSA_Name == GSA)
+  # order the pixels by how large of consumers they are
+  pixels_ag_ET <- sort(pixels$ag_ET, decreasing = TRUE)
+  # while the total is less than the 20% total consumption for that GSA, keep adding 
+  ag_ET_count <- 0
+  pixel_count <- 0
+  while (ag_ET_count < target){
+    pixel_count <- pixel_count+1 
+    ag_ET_count <- ag_ET_count + pixels_ag_ET[pixel_count]
+  }
+  # return the percent of pixels you had to add to get to 20%
+  return(pixel_count/length(pixels_ag_ET))
+}
+
+# apply the function across all GSAs
+GSA_water_use$fraction_fallow <- sapply(GSA_water_use$GSA_Name, get_fraction_fallow)
+print(paste("Mean:", mean(GSA_water_use$fraction_fallow), "95% CI Min:", mean(GSA_water_use$fraction_fallow) - 1.96*sd(GSA_water_use$fraction_fallow), "95% CI Max:", mean(GSA_water_use$fraction_fallow) + 1.96*sd(GSA_water_use$fraction_fallow)))
+
+```
+
+```{r}
+# remove young perennials because you can't actually switch to these
+data <- filter(data, cropnames != "Young Perennial")
+```
+
+
+```{r}
+# some setup
+
+# stuff by GSA
+
+# get the mean consumption for each crop by GSA
+crop_means_gsa <- data %>% group_by(subcropnames, GSA_Name) %>% summarize(crop_mean_gsa = mean(ag_ET))
+crop_means_gsa$crop_mean_gsa <- ifelse(crop_means_gsa$crop_mean_gsa <0, 0, crop_means_gsa$crop_mean_gsa)
+
+# merge to the larger dataset
+data <- merge(data, crop_means_gsa, by = c("subcropnames", "GSA_Name")) %>% filter(cropnames != "Fallow") %>% filter(cropnames != "Young Perennial")
+
+# pick the median crop. This is the median crop grown arranged by median ag ET
+gsa_median_crop <- data %>% group_by(GSA_Name) %>% summarize(gsa_median_crop = median(crop_mean_gsa))
+data <- merge(data, gsa_median_crop, by = "GSA_Name")
+
+# pick the minimum crop
+gsa_min_crop <- data %>% group_by(GSA_Name) %>% summarize(gsa_min_crop = min(crop_mean_gsa))
+data <- merge(data, gsa_min_crop, by = "GSA_Name")
+
+
+
+# stuff by county
+# get the mean consumption for each crop by county
+crop_means_county <- data %>% group_by(subcropnames, NAME) %>% summarize(crop_mean_county = mean(ag_ET))
+crop_means_county$crop_mean_county <- ifelse(crop_means_county$crop_mean_county <0, 0, crop_means_county$crop_mean_county)
+
+# merge to the larger dataset
+data <- merge(data, crop_means_county, by = c("subcropnames", "NAME")) %>% filter(cropnames != "Fallow") %>% filter(cropnames != "Young Perennial")
+
+# get the median consumption for each crop by county
+crop_medians_county <- data %>% group_by(subcropnames, NAME) %>% summarize(crop_median_county = median(ag_ET))
+crop_medians_county$crop_median_county <- ifelse(crop_medians_county$crop_median_county <0, 0, crop_medians_county$crop_median_county)
+
+# merge to the larger dataset
+data <- merge(data, crop_medians_county, by = c("subcropnames", "NAME")) 
+
+# pick the median crop. This is the median crop grown arranged by median ag ET
+county_median_crop <- data %>% group_by(NAME) %>% summarize(county_median_crop = median(crop_mean_county))
+data <- merge(data, county_median_crop, by = "NAME")
+
+# pick the minimum crop
+county_min_crop <- data %>% group_by(NAME) %>% summarize(county_min_crop = min(crop_mean_county))
+data <- merge(data, county_min_crop, by = "NAME")
+
+
+```
+
+```{r}
+#############################################################################
+# how much land needs to change to the median crop to get to a 20% GSA reductions goal? 
+#############################################################################
+get_fraction_to_median_crop <- function(GSA){
+  # get the target amount you need to reduce by
+  target <- filter(GSA_water_use, GSA_Name == GSA)$ag_ET_20_perc
+  # keep only pixels in your GSA
+  pixels <- data %>% filter(GSA_Name == GSA)
+  # order the pixels by how large of consumers their crop type is
+  setorder(pixels, cols = -"crop_mean_county")     
+  # while the total is less than the 20% total consumption for that GSA, keep adding 
+  ag_ET_count <- 0
+  pixel_count <- 0
+  while (ag_ET_count < target){
+    pixel_count <- pixel_count+1 
+    ag_ET_count <- ag_ET_count + (pixels$crop_mean_county[pixel_count] - pixels$county_median_crop[pixel_count])
+    if (pixel_count == nrow(pixels)){
+      return(NA)
+    }
+  }
+  # return the percent of pixels you had to add to get to 20%
+  return(pixel_count/nrow(pixels))
+}
+
+# apply the function across all GSAs
+GSA_water_use$fraction_to_median_crop <- sapply(GSA_water_use$GSA_Name, get_fraction_to_median_crop)
+print(paste("Mean:", mean(GSA_water_use$fraction_to_median_crop, na.rm = TRUE), "95% CI Min:", mean(GSA_water_use$fraction_to_median_crop, na.rm = TRUE) - 1.96*sd(GSA_water_use$fraction_to_median_crop, na.rm = TRUE), "95% CI Max:", mean(GSA_water_use$fraction_to_median_crop, na.rm = TRUE) + 1.96*sd(GSA_water_use$fraction_to_median_crop, na.rm = TRUE)))
+
+print(paste("Fraction NA:", sum(is.na(GSA_water_use$fraction_to_median_crop))/nrow(GSA_water_use)))
+# for (GSA in GSA_water_use$GSA_Name) {
+#   print(GSA)
+#   get_fraction_to_median_crop(GSA)
+# }
+```
+
+
+```{r}
+#############################################################################
+# how much land needs to change to the min crop to get to a 20% GSA reductions goal? 
+#############################################################################
+
+get_fraction_to_min_crop <- function(GSA){
+  # get the target amount you need to reduce by
+  target <- filter(GSA_water_use, GSA_Name == GSA)$ag_ET_20_perc
+  # keep only pixels in your GSA
+  pixels <- data %>% filter(GSA_Name == GSA)
+  # order the pixels by how large of consumers their crop type is
+  setorder(pixels, cols = -"crop_mean_county")     
+  # while the total is less than the 20% total consumption for that GSA, keep adding 
+  ag_ET_count <- 0
+  pixel_count <- 0
+  while (ag_ET_count < target){
+    pixel_count <- pixel_count+1 
+    ag_ET_count <- ag_ET_count + (pixels$crop_mean_county[pixel_count] - pixels$county_min_crop[pixel_count])
+    if (pixel_count == nrow(pixels)){
+      return(NA)
+    }
+  }
+  # return the percent of pixels you had to add to get to 20%
+  return(pixel_count/nrow(pixels))
+}
+
+# apply the function across all GSAs
+GSA_water_use$fraction_to_min_crop <- sapply(GSA_water_use$GSA_Name, get_fraction_to_min_crop)
+
+print(paste("Mean:", mean(GSA_water_use$fraction_to_min_crop, na.rm = TRUE), "95% CI Min:", mean(GSA_water_use$fraction_to_min_crop, na.rm = TRUE) - 1.96*sd(GSA_water_use$fraction_to_min_crop, na.rm = TRUE), "95% CI Max:", mean(GSA_water_use$fraction_to_min_crop, na.rm = TRUE) + 1.96*sd(GSA_water_use$fraction_to_min_crop, na.rm = TRUE)))
+
+print(paste("Fraction NA:", sum(is.na(GSA_water_use$fraction_to_min_crop))/nrow(GSA_water_use)))
+```
+
+
+```{r}
+#############################################################################
+# how much land needs to change to the median consuming ET for the same crop to get to a 20% GSA reductions goal? 
+#############################################################################
+
+get_fraction_to_med_same_crop <- function(GSA){
+  # get the target amount you need to reduce by
+  target <- filter(GSA_water_use, GSA_Name == GSA)$ag_ET_20_perc
+  # keep only pixels in your GSA
+  pixels <- data %>% filter(GSA_Name == GSA)
+  # order the pixels by how large of consumers their crop type is
+  setorder(pixels, cols = -"ag_ET")     
+  # while the total is less than the 20% total consumption for that GSA, keep adding 
+  ag_ET_count <- 0
+  pixel_count <- 0
+  while (ag_ET_count < target){
+    pixel_count <- pixel_count+1 
+    ag_ET_count <- ag_ET_count + (pixels$ag_ET[pixel_count] - pixels$county_median_crop[pixel_count])
+    if (pixel_count == nrow(pixels)){
+      return(NA)
+    }
+  }
+  # return the percent of pixels you had to add to get to 20%
+  return(pixel_count/nrow(pixels))
+}
+
+# apply the function across all GSAs
+GSA_water_use$fraction_to_med_same_crop <- sapply(GSA_water_use$GSA_Name, get_fraction_to_med_same_crop)
+
+print(paste("Mean:", mean(GSA_water_use$fraction_to_med_same_crop, na.rm = TRUE), "95% CI Min:", mean(GSA_water_use$fraction_to_med_same_crop, na.rm = TRUE) - 1.96*sd(GSA_water_use$fraction_to_med_same_crop, na.rm = TRUE), "95% CI Max:", mean(GSA_water_use$fraction_to_med_same_crop, na.rm = TRUE) + 1.96*sd(GSA_water_use$fraction_to_med_same_crop, na.rm = TRUE)))
+
+print(paste("Fraction NA:", sum(is.na(GSA_water_use$fraction_to_med_same_crop))/nrow(GSA_water_use)))
+```
+
+# plot this stuff out
+```{r}
+gsa_poly <- st_read(gsa_loc) %>% dplyr::filter(GSA_Name %in% unique(GSA_water_use$GSA_Name)) %>% st_make_valid() 
+gsa_poly <- gsa_poly%>% st_make_valid()
+gsa_poly <- gsa_poly[-c(4, 152),] # for some reason I'm not able to make these valid
+```
+
+```{r}
+gsa_poly <- merge(gsa_poly, GSA_water_use, by = "GSA_Name", all.x = TRUE)
+```
+
+```{r}
+# study area and counties for plotting
+study_area <- st_read(study_area_loc) %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
+counties <- st_read(counties_loc) %>% filter(STATEFP == "06") %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
+```
+
+```{r}
+gsa_plotting <- gsa_poly %>% pivot_longer(cols = c(fraction_fallow, fraction_to_median_crop, fraction_to_min_crop, fraction_to_med_same_crop), names_to = "Intervention", values_to = "Percent_land_affected")
+
+new.labs <- c("Fallow", "Switch to median crop", "Switch to minimum crop", "Same crop; reduce to median")
+names(new.labs) <- c("fraction_fallow", "fraction_to_median_crop", "fraction_to_min_crop", "fraction_to_med_same_crop")
+
+ggplot(gsa_plotting) + 
+  geom_sf(data = counties, color=alpha("white",1), size = .2) + 
+  geom_sf(aes(fill = Percent_land_affected), color=alpha("red",0)) + 
+  facet_grid(cols = vars(Intervention), labeller = labeller(Intervention = new.labs)) +
+  scale_fill_distiller(palette="RdYlBu", direction=-1, name = "% Land") + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  xlim(c(-122.92, -118.6)) + 
+  ylim(c(34.94, 40.754)) + 
+  theme_classic() +
+  theme(legend.position = c(0.96, 0.7),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(), 
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+```
+
