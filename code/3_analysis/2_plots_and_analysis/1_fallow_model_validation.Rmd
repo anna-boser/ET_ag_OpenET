@@ -24,7 +24,7 @@ source(here("file_paths.R"))
 experiment_name <- "fallow_3-9_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 # dataset <- "fallow"
-dataset <- "val" # val or test
+dataset <- "test" # val or test
 tidy <- FALSE
 ```
 
