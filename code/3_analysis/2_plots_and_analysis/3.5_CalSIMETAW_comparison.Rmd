@@ -15,8 +15,32 @@ library(ggplot2)
 library(tidyr)
 library(stringr)
 library(ggrepel)
+library(lfe)
 
 source(here("file_paths.R"))
+```
+
+```{r}
+experiment_name <- "fallow_3-9_gb"
+experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+```
+
+
+# Diagnostics
+```{r}
+# disgnostics: is simulated natural ET higher any given month? 
+c <- fread(here(experiment_path, "time_series_by_crop.csv"))
+sc <- fread(here(experiment_path, "time_series_by_subcrop.csv"))
+
+ggplot(c) + 
+  geom_line(aes(x = month, y = ET, color = "Observed ET")) + 
+  geom_line(aes(x = month, y = ET_pred, color = "Simulated natural ET")) + 
+  facet_wrap(vars(cropnames))
+
+ggplot(sc) + 
+  geom_line(aes(x = month, y = ET, color = "Observed ET")) + 
+  geom_line(aes(x = month, y = ET_pred, color = "Simulated natural ET")) + 
+  facet_wrap(vars(subcropnames))
 ```
 
 ## Compare my estimates of crop water use and irrigation water use to CalSIMETAW outputs
@@ -33,180 +57,196 @@ CS <- filter(CS, COUNTY_NAME %in% counties)
 # get mm/day 
 CS$Date <- as.Date(CS$Date)
 CS$year <- year(CS$Date + 92) # add three months to get the water year
+CS$month <- month(CS$Date)
 
-# average by CalSIMETAW crop type and year. get mm/da instead of mm/month
-CS <- CS %>% 
-  group_by(CROP_NAME, year) %>% 
-  summarize(ETo = mean(ETo/30.5), 
-            ETc = mean(ETc/30.5), 
-            Pcp = mean(Pcp/30.5), 
-            Er = mean(Er/30.5), 
-            Spg = mean(Spg/30.5), 
-            Espg = mean(Espg/30.5), 
-            AW = mean(AW/30.5))
-
-# lookup table
+# subcrop lookup table. The rule is first look in the general crop types, if it's not there look in the subcrop types. 
 l = c("Grain" = "Grain and hay crops", 
       "Rice" = "Rice", 
-      "Cotton" = "Field crops", 
-      "Sugar Beets" = "Truck, nursery, and berry crops", 
-      "Corn" = "Field crops",
-      "Dry Beans" = "Truck, nursery, and berry crops",
-      "Safflower" = "Field crops",
+      "Cotton" = "Cotton", 
+      "Sugar Beets" = NA, # "Truck, nursery, and berry crops", 
+      "Corn" = "Corn,Sorghum or Sudan", # "Field crops",
+      "Dry Beans" = "Beans (dry)", # "Truck, nursery, and berry crops",
+      "Safflower" = "Safflower", # "Field crops",
       "Other Field" = "Field crops",
-      "Alfalfa" = "Grain and hay crops", 
+      "Alfalfa" = "Alfalfa & alfalfa mixtures", # "Grain and hay crops", 
       "Pasture" = "Pasture", 
-      "Tomato Processing" = "Truck, nursery, and berry crops", 
-      "Tomato Fresh" = "Truck, nursery, and berry crops", 
-      "Cucurbits" = "Truck, nursery, and berry crops", 
-      "Onions & Garlic" = "Truck, nursery, and berry crops", 
-      "Potatoes" = "Truck, nursery, and berry crops", 
+      "Tomato Processing" = "Tomatoes (processing)", 
+      "Tomato Fresh" = NA, # "Truck, nursery, and berry crops", 
+      "Cucurbits" = "Melons", # "Truck, nursery, and berry crops", 
+      "Onions & Garlic" = "Onions & garlic", # "Truck, nursery, and berry crops", 
+      "Potatoes" = "Potato or Sweet potato", # "Truck, nursery, and berry crops", 
       "Truck Crops" = "Truck, nursery, and berry crops", 
-      "Almond & Pistacios" = "Deciduous fruits and nuts", 
+      "Almond & Pistacios" = "Almond & Pistacios", # "Deciduous fruits and nuts", 
       "Other Decidious" = "Deciduous fruits and nuts", 
       "Citrus & Subtropical" = "Citrus and subtropical", 
       "Vineyard" = "Vineyards", 
       "Urban Landscape" = NA, 
       "Riparian" = NA, 
-      "Native Vegetation" = NA, # "Fallow or idle", 
+      "Native Vegetation" = NA, 
       "Water Surface" = NA)
 
 CS$cropnames = l[CS$CROP_NAME]
 CS <- filter(CS, !is.na(cropnames))
+```
 
-CS_means <- CS %>% 
-  group_by(cropnames) %>%
-  summarize(ETo_sd = sd(ETo), 
-            ETc_sd = sd(ETc), 
-            Pcp_sd = sd(Pcp), 
-            Er_sd = sd(Er), 
-            Spg_sd = sd(Spg), 
-            Espg_sd = sd(Espg), 
-            AW_sd = sd(AW), 
-            ETc_Pcp_sd = sd(ETc-Pcp), 
-            
-            ETo = mean(ETo), 
+# lazy version without standard errors: 
+```{r}
+# get the monthly ET by crop dataset
+df <- fread(here(experiment_path, "agriculture_monthly_county_crop.csv"))
+df <- filter(df, cropnames %in% CS$cropnames)
+CS <- merge(CS, df, by = c("cropnames", "COUNTY_NAME", "month"))
+
+# average by CalSIMETAW county and crop type. get mm/da instead of mm/month
+scatter_data <- CS %>% 
+  group_by(COUNTY_NAME, cropnames) %>% 
+  summarize(ETo = mean(ETo), 
+            ag_ET_need = mean(ifelse(ETc>Pcp, ETc-Pcp, 0)), 
+            ETc_ET_pred = mean(ifelse(ETc>ET_pred, ETc-ET_pred, 0)), #
+            ET_ET_pred = mean(ifelse(ET>ET_pred, ET-ET_pred, 0)), #
+            ag_ET = mean(ag_ET), #
+            ET = mean(ET), #
+            ET_pred = mean(ET_pred), #
+            latitude = mean(latitude), #
+            unused_rain = mean(ifelse(ETc<Pcp, Pcp-ETc, 0)),
             ETc = mean(ETc), 
             Pcp = mean(Pcp), 
             Er = mean(Er), 
             Spg = mean(Spg), 
             Espg = mean(Espg), 
             AW = mean(AW), 
-            ETc_Pcp = mean(ETc-Pcp))
-```
-
-```{r}
-ggplot(CS_means, aes(x = reorder(cropnames, ETc))) + 
-  geom_col(aes(y = ETc, fill = "ETc"), alpha = 0.6) + 
-  geom_col(aes(y = Pcp, fill = "Precipitation"), alpha = 0.6) + 
-  theme(axis.text.x = element_text(angle = 30, hjust=1), 
-        axis.title.x=element_blank(), 
-        axis.ticks.x=element_blank(), 
-        legend.position = "top", 
-        legend.direction="horizontal", 
-        legend.title=element_blank()) + 
-  ylab("ETc (mm/day)")
-```
-
-## get the agricultural ET and natural ET from my data
-
-```{r}
-experiment_name <- "fveg_11-30_gb_test_set"
-experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
-months_ts <- TRUE
-
-```
-
-```{r}
-data <- fread(file = here(experiment_path, "agriculture.csv"))
-
-data[data == -9999] <- NA # this is the na value
-
-if (months_ts){
-  # get a nice column of numeric months
-  months <- select(data, names(data)[grepl("month", names(data))])
-  data$month <- names(months)[max.col(months)] 
-  data$month <- str_extract(data$month, '(?<=_)\\d+') %>% as.numeric()
-}
-```
-
-## average over months
-```{r}
-if (months_ts == TRUE){
-  # Average over monthgroups
-  data <- data %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
-                                                  ET_pred = mean(ET_pred, na.rm=TRUE), 
-                                                  ag_ET = ET-ET_pred)
-}
-```
-
-# add crop type information 
-```{r}
-data$x <- round(data$x, 7)
-data$y <- round(data$y, 7)
-
-# add_crops
-crops <- fread(crops_table_loc)
-crops$cell <- NULL
-crops$x <- round(crops$x, 7)
-crops$y <- round(crops$y, 7)
-
-data <- merge(data, crops, by = c("x", "y"), all.x=TRUE)
-data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow or idle", data$cropnames) # rename unclassified fallow to just fallow
+            irr_eff = ag_ET_need/AW)
 ```
 
 
-Check how water use varies by crop
-```{r}
-bardata = data %>% 
-  filter(!is.na(cropnames)) %>%
-  group_by(cropnames) %>%
-  summarize(ET = mean(ET, na.rm = TRUE), 
-            ag_ET = mean(ag_ET, na.rm = TRUE), 
-            ET_pred = mean(ET_pred, na.rm = TRUE)) 
-```
 
-Plot the things
 ```{r}
-scatter_data <- merge(CS_means, bardata, by = "cropnames")
+ggplot(scatter_data) + 
+  geom_abline(intercept=0,slope=1, color="red") + 
+  geom_point(aes(x = ETc + unused_rain, y = ET, color = latitude)) + 
+  scale_color_distiller(palette="RdYlBu", direction=1, name = "Latitude") + 
+  geom_smooth(aes(x = ETc + unused_rain, y = ET), method="lm") + 
+  theme_classic() + 
+  ylab("Observed ET (mm/month)") + 
+  xlab("CalSIMETAW ETc + Unused rain (mm/month)")
 
+ggplot(scatter_data) + 
+  geom_abline(intercept=0,slope=1, color="red") + 
+  geom_point(aes(x = ET, y = ETc + unused_rain, color = latitude)) + 
+  scale_color_distiller(palette="RdYlBu", direction=1, name = "Latitude") + 
+  geom_smooth(aes(x = ET, y = ETc + unused_rain), method="lm") + 
+  theme_classic() + 
+  xlab("Observed ET (mm/month)") + 
+  ylab("CalSIMETAW ETc + Unused rain (mm/month)")
+
+scatter_data$total_CS_ET = scatter_data$ETc+scatter_data$unused_rain
+
+lm(total_CS_ET~ET, scatter_data) %>% summary()
+lm(ET~total_CS_ET, scatter_data) %>% summary()
 ```
 
 ```{r}
 ggplot(scatter_data) + 
   geom_abline(intercept=0,slope=1, color="red") + 
-  geom_point(aes(x = ET, y = ETc)) + 
-  geom_linerange(aes(x = ET, ymin = (ETc - 1.96*(ETc_sd/15)), ymax = (ETc + 1.96*(ETc_sd/15)))) + 
-  geom_label_repel(aes(x = ET, y = ETc, label = cropnames)) + 
+  geom_point(aes(x = ag_ET, y = ag_ET_need, color = latitude)) + 
+  scale_color_distiller(palette="RdYlBu", direction=1, name = "Latitude") + 
+  geom_smooth(aes(x = ag_ET, y = ag_ET_need), method="lm") + 
   theme_classic() + 
-  xlim(c(1,4)) + 
-  ylim(c(1,4)) + 
-  xlab("Observed ET (mm/day)") + 
-  ylab("CalSIMETAW ETc (mm/day)")
+  xlab("Empirical Agricultural ET (mm/month)") + 
+  ylab("CalSIMETAW Agricultural ET (mm/month)")
+
+ggplot(scatter_data) + 
+  geom_abline(intercept=0,slope=1, color="red") + 
+  geom_point(aes(x = ag_ET_need, y = ag_ET,  color = latitude)) + 
+  scale_color_distiller(palette="RdYlBu", direction=1, name = "Latitude") + 
+  geom_smooth(aes(x = ag_ET_need, y = ag_ET), method="lm") + 
+  theme_classic() + 
+  ylab("Empirical Agricultural ET (mm/month)") + 
+  xlab("CalSIMETAW Agricultural ET (mm/month)")
+
+lm(ag_ET_need~ag_ET, scatter_data) %>% summary()
+lm(ag_ET~ag_ET_need, scatter_data) %>% summary()
 ```
 
+# If you use ET_pred instead of ET
 ```{r}
 ggplot(scatter_data) + 
   geom_abline(intercept=0,slope=1, color="red") + 
-  geom_point(aes(x = ag_ET, y = ETc_Pcp)) + 
-  geom_linerange(aes(x = ag_ET, ymin = (ETc_Pcp - 1.96*(ETc_Pcp_sd/15)), ymax = (ETc_Pcp + 1.96*(ETc_Pcp_sd/15)))) + 
-  geom_label_repel(aes(x = ag_ET, y = ETc_Pcp, label = cropnames)) + 
+  geom_point(aes(x = ag_ET, y = ETc_ET_pred, color = latitude)) + 
+  scale_color_distiller(palette="RdYlBu", direction=1, name = "Latitude") + 
+  geom_smooth(aes(x = ag_ET, y = ETc_ET_pred), method="lm") + 
   theme_classic() + 
-  xlab("Agricultural ET (mm/day)") + 
-  ylab("CalSIMETAW ETc - Precipitation (mm/day)")
+  xlab("Empirical Agricultural ET (mm/month)") + 
+  ylab("CalSIMETAW Agricultural ET (mm/month)")
+
+ggplot(scatter_data) + 
+  geom_abline(intercept=0,slope=1, color="red") + 
+  geom_point(aes(x = ETc_ET_pred, y = ag_ET,  color = latitude)) + 
+  scale_color_distiller(palette="RdYlBu", direction=1, name = "Latitude") + 
+  geom_smooth(aes(x = ETc_ET_pred, y = ag_ET), method="lm") + 
+  theme_classic() + 
+  ylab("Empirical Agricultural ET (mm/month)") + 
+  xlab("CalSIMETAW Agricultural ET (mm/month)")
+
+lm(ETc_ET_pred~ag_ET, scatter_data) %>% summary()
+lm(ag_ET~ETc_ET_pred, scatter_data) %>% summary()
 ```
 
-Precipitation vs natural ET
 ```{r}
-ggplot(scatter_data, aes(x = reorder(cropnames, ET_pred))) + 
+cols <- c("#89C5DA", "#DA5724", "#74D944", "#CE50CA", "#3F4921", "#C0717C", "#CBD588", "#5F7FC7", 
+"#673770", "#D3D93E", "#38333E", "#508578", "#D7C1B1", "#689030", "#AD6F3B", "#CD9BCD", 
+"#D14285", "#6DDE88")
+ggplot(scatter_data) + 
+  geom_abline(intercept=0,slope=1, color="red") + 
+  geom_point(aes(x = ETc_ET_pred, y = ag_ET,  color = cropnames)) + 
+  scale_color_manual(values=cols) + 
+  geom_smooth(aes(x = ETc_ET_pred, y = ag_ET), method="lm") + 
   theme_classic() + 
-  geom_col(aes(y=ET_pred), fill ="goldenrod4", alpha = .4) + 
-  geom_abline(aes(intercept=Pcp,slope=0), color="blue") +  
-  geom_rect(aes(ymin = Pcp - 1.96*(Pcp_sd/15), ymax = Pcp + 1.96*(Pcp_sd/15), xmin = 0.25, xmax = 8.75), alpha = .05, fill = "blue") +
-  geom_text(aes(x = 7, y = Pcp + .1, label = "Precipitation (CalSIMETAW)"), color = "blue") + 
-  ylab("Natural ET (ML model)") + 
-  theme(axis.text.x = element_text(angle = 30, hjust=1), 
-      axis.title.x=element_blank(), 
-      axis.ticks.x=element_blank())
+  ylab("Empirical Agricultural ET (mm/month)") + 
+  xlab("CalSIMETAW Agricultural ET (mm/month)")
 ```
 
+
+# If you calculate ag_ET on a monthly level and set to 0 if ET_pred>ET like you do for CalSIMETAW
+```{r}
+ggplot(scatter_data) + 
+  geom_abline(intercept=0,slope=1, color="red") + 
+  geom_point(aes(x = ET_ET_pred, y = ETc_ET_pred, color = latitude)) + 
+  scale_color_distiller(palette="RdYlBu", direction=1, name = "Latitude") + 
+  geom_smooth(aes(x = ET_ET_pred, y = ETc_ET_pred), method="lm") + 
+  theme_classic() + 
+  xlab("Empirical Agricultural ET (mm/month)") + 
+  ylab("CalSIMETAW Agricultural ET (mm/month)")
+
+ggplot(scatter_data) + 
+  geom_abline(intercept=0,slope=1, color="red") + 
+  geom_point(aes(x = ETc_ET_pred, y = ET_ET_pred,  color = latitude)) + 
+  scale_color_distiller(palette="RdYlBu", direction=1, name = "Latitude") + 
+  geom_smooth(aes(x = ETc_ET_pred, y = ET_ET_pred), method="lm") + 
+  theme_classic() + 
+  ylab("Empirical Agricultural ET (mm/month)") + 
+  xlab("CalSIMETAW Agricultural ET (mm/month)")
+
+lm(ETc_ET_pred~ET_ET_pred, scatter_data) %>% summary()
+lm(ET_ET_pred~ETc_ET_pred, scatter_data) %>% summary()
+```
+
+# Precipitation vs natural ET
+```{r}
+ggplot(scatter_data) + 
+  geom_abline(intercept=0,slope=1, color="red") + 
+  geom_point(aes(x = ET_pred, y = Pcp, color = latitude)) + 
+  scale_color_distiller(palette="RdYlBu", direction=1, name = "Latitude") + 
+  geom_smooth(aes(x = ET_pred, y = Pcp), method="lm") + 
+  theme_classic() + 
+  xlab("Simulated natural ET (mm/month)") + 
+  ylab("CalSIMETAW Pcp (mm/month)")
+
+ggplot(scatter_data) + 
+  geom_abline(intercept=0,slope=1, color="red") + 
+  geom_point(aes(x = Pcp, y = ET_pred, color = latitude)) + 
+  scale_color_distiller(palette="RdYlBu", direction=1, name = "Latitude") + 
+  geom_smooth(aes(x = Pcp, y = ET_pred), method="lm") + 
+  theme_classic() + 
+  ylab("Simulated natural ET (mm/month)") + 
+  xlab("CalSIMETAW Pcp (mm/month)")
+```
