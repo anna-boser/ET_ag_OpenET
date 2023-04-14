@@ -1,0 +1,160 @@
+---
+title: "5_gsa_analysis"
+author: "Anna Boser"
+date: "2023-03-24"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sp)
+library(here)
+library(stringr)
+library(sf)
+library(data.table)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(latex2exp)
+library(lfe)
+
+source(here("file_paths.R"))
+source(here("helper_functions.R"))
+```
+
+## Read in the data
+```{r}
+experiment_name <- "fallow_3-9_gb"
+experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+data <- fread(file = here(experiment_path, "agriculture_yearly.csv"))
+
+# study area and counties for plotting
+study_area <- st_read(study_area_loc) %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
+counties <- st_read(counties_loc) %>% filter(STATEFP == "06") %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
+```
+
+# clean data
+```{r}
+data <- filter(data, coverage_fraction>.5)
+
+data <- data[cropnames != "",] # only keep data that has crop info (get rid of years without dwr data)
+data <- data[cropnames != "Urban - residential, commercial, and industrial, unsegregated",] # remove urban
+data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow", data$cropnames) # rename unclassified fallow to just fallow
+
+# remove all fallow pixels
+data <- filter(data, cropnames != "Fallow")
+
+data$subcropnames <- ifelse(data$subcropnames == "", data$cropnames, data$subcropnames)
+
+data$year <- as.factor(data$year)
+
+data <- filter(data,  subcropnames != "Greenhouse")
+
+# combine potatoes and "potatoes or sweet potato"
+data$subcropnames <- ifelse(data$subcropnames %in% c("Potatoes", "Potato or Sweet potato"), "Potato or Sweet potato", data$subcropnames)
+```
+
+```{r}
+# add basin info
+data <- add_basin(data)
+
+data <- filter(data, !is.na(subbasin_n)) # remove pixels that are not in a subbasin
+data <- filter(data, subbasin_n != "CAPAY VALLEY") # this is tiny and not really in the CV
+data <- filter(data, cropnames != "Young Perennial") # remove young perennials because you can't actually switch to these
+```
+
+# get medians, means, etc. 
+
+```{r}
+# stuff by basin
+# get the mean consumption for each crop by basin and year
+crop_means_basin <- data %>% group_by(subcropnames, subbasin_n, year) %>% summarize(crop_mean_basin = mean(ag_ET))
+crop_means_basin$crop_mean_basin <- ifelse(crop_means_basin$crop_mean_basin <0, 0, crop_means_basin$crop_mean_basin)
+
+# merge to the larger dataset
+data <- merge(data, crop_means_basin, by = c("subcropnames", "subbasin_n", "year"))
+
+# get the median consumption for each crop by basin
+crop_medians_basin <- data %>% group_by(subcropnames, subbasin_n, year) %>% summarize(crop_median_basin = median(ag_ET))
+crop_medians_basin$crop_median_basin <- ifelse(crop_medians_basin$crop_median_basin <0, 0, crop_medians_basin$crop_median_basin)
+
+# merge to the larger dataset
+data <- merge(data, crop_medians_basin, by = c("subcropnames", "subbasin_n", "year")) 
+
+# pick the median crop for each basin and year. This is the median crop grown arranged by mean ag ET
+basin_median_crop <- data %>% group_by(subbasin_n, year) %>% summarize(basin_median_crop = median(crop_mean_basin))
+data <- merge(data, basin_median_crop, by = c("subbasin_n", "year"))
+
+# pick the minimum crop for each basin. 
+basin_min_crop <- data %>% group_by(subbasin_n, year) %>% summarize(basin_min_crop = min(crop_mean_basin))
+data <- merge(data, basin_min_crop, by = c("subbasin_n", "year"))
+
+# 95th percentile consumers in each basin
+basin_95 <- data %>% group_by(subbasin_n, year) %>% summarize(basin_95 = quantile(ag_ET, probs = .95))
+data <- merge(data, basin_95, by = c("subbasin_n", "year"))
+```
+
+# scenarios 
+```{r}
+# Crop-switching to the median consuming crop
+data$med_crop_switch <- ifelse(data$crop_mean_basin > data$basin_median_crop, data$basin_median_crop, data$crop_mean_basin)
+
+# Crop-switching to the minimum consuming crop
+data$min_crop_switch <- ifelse(data$crop_mean_basin > data$basin_min_crop, data$basin_min_crop, data$crop_mean_basin)
+
+# same crop -- median consumption
+data$median_same_crop <- ifelse(data$ag_ET > data$crop_median_basin, data$crop_median_basin, data$ag_ET)
+
+# fallow 5% of lands
+data$fallow <- ifelse(data$ag_ET > data$basin_95, 0, data$ag_ET)
+```
+
+```{r}
+# get the percent saved for each intervention
+scenarios <- data %>% 
+  group_by(subbasin_n) %>% 
+  summarise(med_crop_switch = 100 - mean(med_crop_switch)/mean(ag_ET)*100, 
+            min_crop_switch = 100 - mean(min_crop_switch)/mean(ag_ET)*100, 
+            median_same_crop = 100 - mean(median_same_crop)/mean(ag_ET)*100, 
+            fallow = 100 - mean(fallow)/mean(ag_ET)*100) %>%
+  pivot_longer(cols = c("med_crop_switch", "min_crop_switch", "median_same_crop", "fallow"), 
+               names_to = "Intervention", 
+               values_to = "Percent_savings")
+
+scenarios$Percent_savings <- ifelse(scenarios$Percent_savings < 0 , 0, scenarios$Percent_savings)
+scenarios$Percent_savings <- ifelse(scenarios$Percent_savings > 100 , 100, scenarios$Percent_savings)
+
+# basins 
+basin_poly <- st_read(basin_loc) 
+# filter to only keep CV basins
+basin_poly <- basin_poly %>% filter(basin_name %in% c("SACRAMENTO VALLEY", "SAN JOAQUIN VALLEY"))
+basin_poly <- filter(basin_poly, subbasin_n != "CAPAY VALLEY") # this is tiny and not really in the CV
+scenarios <- merge(basin_poly, scenarios, by = "subbasin_n", all.x = TRUE)
+```
+
+```{r}
+
+new.labs <- c("Switch to median crop", "Switch to minimum crop", "Same crop; reduce to median", "Fallow 5% of land")
+names(new.labs) <- c("med_crop_switch", "min_crop_switch", "median_same_crop", "fallow")
+
+scenarios$Intervention <- factor(scenarios$Intervention, levels = c("med_crop_switch", "min_crop_switch", "median_same_crop", "fallow"))
+
+filter(scenarios, Intervention != "min_crop_switch") %>% 
+#scenarios %>%
+  ggplot() + 
+  geom_sf(data = counties, fill = "grey", color=alpha("white",1), size = .2) + 
+  geom_sf(aes(fill = Percent_savings), color=alpha("black",.3), size = .2) + 
+  facet_grid(cols = vars(Intervention), labeller = labeller(Intervention = new.labs)) +
+  scale_fill_distiller(palette="Blues", direction=1, name = "% Savings") + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  xlim(c(minlong, maxlong)) + 
+  ylim(c(minlat, maxlat)) + 
+  theme_classic() +
+  theme(legend.position = c(0.93, 0.74),
+        axis.title.y=element_blank(),
+        axis.text.y=element_blank(),
+        axis.ticks.y=element_blank(), 
+        axis.title.x=element_blank(),
+        axis.text.x=element_blank(),
+        axis.ticks.x=element_blank())
+```

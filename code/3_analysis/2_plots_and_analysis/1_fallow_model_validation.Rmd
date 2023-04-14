@@ -23,9 +23,9 @@ source(here("file_paths.R"))
 ```{r}
 experiment_name <- "fallow_3-9_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
-# dataset <- "fallow"
 dataset <- "test" # val or test
 tidy <- FALSE
+scalar = 1.2 # mm/month to cm/year
 ```
 
 # ET over fallow lands vs predictions
@@ -52,8 +52,8 @@ if (tidy == FALSE){
 ### A scatterplot with months averaged out
 ```{r}
 # averaging over different months
-data_year <- data %>% group_by(x, y, year) %>% summarize(ET = mean(ET, na.rm=TRUE), 
-                                                       ET_pred = mean(ET_pred, na.rm=TRUE))
+data_year <- data %>% group_by(x, y, year) %>% summarize(ET = mean(ET, na.rm=TRUE)*scalar, 
+                                                       ET_pred = mean(ET_pred, na.rm=TRUE)*scalar)
 
 r2 <- summary(lm(ET~ET_pred, data=data_year))$r.squared 
 Bias <- mean(data_year$ET_pred - data_year$ET, na.rm=TRUE)
@@ -65,10 +65,10 @@ ggplot(data_year) +
   theme_classic() + 
   geom_smooth(aes(x=ET_pred, y=ET), method = lm, se = TRUE) +
   # annotate("text", x=3, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
-  xlab("Predicted natural ET (mm/month)") + 
-  ylab("Observed fallow ET (mm/month)") +
-    xlim(c(0,85)) + 
-    ylim(c(0,85))
+  xlab("Predicted natural ET (cm/year)") + 
+  ylab("Observed fallow ET (cm/year)") +
+    xlim(c(0,85*scalar)) + 
+    ylim(c(0,85*scalar))
 
 print(paste("R2:", round(r2, 3), "Bias:", round(Bias, 3), "RMSE:", round(RMSE, 3), "MAE:", round(MAE, 3)))
 ```
@@ -83,6 +83,9 @@ loc_df <- data %>% group_by(x,y) %>% summarise(Bias = -mean(ag_ET),
                                        ET_pred = mean(ET_pred)) %>%
   pivot_longer(cols=c("Bias", "ET", "ET_pred"), names_to = "type", values_to = "ET")
 
+new.labs <- c("Observed ET", "Simulated ET")
+names(new.labs) <- c("ET", "ET_pred")
+
 loc_df %>% filter(type %in% c("ET", "ET_pred")) %>%
   ggplot() + 
   geom_sf(data = counties, color=alpha("white",1), fill=alpha("grey",1), size = .2) + 
@@ -90,8 +93,8 @@ loc_df %>% filter(type %in% c("ET", "ET_pred")) %>%
   xlim(c(-122.92, -118)) + 
   ylim(c(34.7, 40.754)) + 
   geom_point(aes(x=x,y=y,col=ET), size = .1) + 
-  facet_grid(cols = vars(type)) + 
-  scale_color_distiller(palette="RdBu") + 
+  facet_grid(cols = vars(type), labeller = labeller(type = new.labs)) + 
+  scale_color_distiller(name="ET (cm/year)", palette="RdBu") + 
   theme_void()
   
 loc_df %>% filter(type %in% c("Bias")) %>%
@@ -102,7 +105,7 @@ loc_df %>% filter(type %in% c("Bias")) %>%
   ylim(c(34.7, 40.754)) + 
   geom_point(aes(x=x,y=y,col=ET), size = .1) + 
   facet_grid(cols = vars(type)) + 
-  scale_color_distiller(palette="RdBu", limits = c(-55, 55)) + 
+  scale_color_distiller(name="ET (cm/year)", palette="RdBu", limits = c(-55, 55)) + 
   theme_void()
 ```
 
@@ -158,19 +161,21 @@ ts_from_felm <- function(input_lm){
 ET_df <- ts_from_felm(felm(ET~month_f-1 | 0 | 0 | cluster+year, data))
 ET_df$type = "Observed ET"
 ET_pred_df <- ts_from_felm(felm(ET_pred~month_f-1 | 0 | 0 | cluster+year, data))
-ET_pred_df$type = "Simulated natural ET"
+ET_pred_df$type = "Simulated fallow ET"
 ts <- rbind(ET_df, ET_pred_df)
 
-scalar = 1 # 1.2 turns mm/month to cm/year
-
 ggplot(ts, aes(x = month)) + 
-  geom_line(aes(y = ET*scalar, col = type)) + 
-  geom_ribbon(aes(ymax = min*scalar, ymin = max*scalar, fill = type), alpha = .2)
+  geom_line(aes(y = ET, col = type)) + 
+  geom_ribbon(aes(ymax = min, ymin = max, fill = type), alpha = .2) + 
+  ylab("ET (cm/year)") + 
+  xlab("Month") + 
+  labs(color=NULL, fill=NULL) + 
+  theme_classic()
 
 ts_bias <- ts_from_felm(felm(ag_ET~month_f-1 | 0 | 0 | cluster+year, data))
 ggplot(ts_bias, aes(x = month)) + 
-  geom_line(aes(y = ET*scalar)) + 
-  geom_ribbon(aes(ymax = min*scalar, ymin = max*scalar), alpha = .2) +
+  geom_line(aes(y = ET)) + 
+  geom_ribbon(aes(ymax = min, ymin = max), alpha = .2) +
   xlab("Month") + 
   ylab("ET (mm/month)")
 ```

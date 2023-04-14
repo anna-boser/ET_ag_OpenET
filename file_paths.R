@@ -173,6 +173,23 @@ gsa_loc <- here("data", "1_raw", "GSA", "GSA.shp")
 # created in 1_generate_datasets/1_intermediate/additional_data/3_GSA.R
 gsa_table_loc <- here("data", "4_for_analysis", "additional_data", "GSA.csv")
 
+# subbasin shapefile
+# https://geodata.lib.utexas.edu/catalog/stanford-kt110sd4399
+basin_loc <- here("data", "1_raw", "subbasins", "basin.shp")
+
+# a table with the location of a pixel and the basin it belongs in
+# created in 1_generate_datasets/1_intermediate/additional_data/5_basin.R
+basin_table_loc <- here("data", "4_for_analysis", "additional_data", "basin.csv")
+
+# ET0 zone shapefile from CIMIS
+# https://cimis.water.ca.gov/App_Themes/images/etozonemap.jpg. 
+# Obtained through personal correspondance with Ricardo.Trezza@water.ca.gov and DWRCIMISPublicContact@water.ca.gov
+et0_zone_loc <- here("data", "1_raw", "CIMIS_ETo", "Zones_eto_utm10_nad27.shp")
+
+# a table with the location of a pixel and the ET0 zone it belongs in
+# created in 1_generate_datasets/1_intermediate/additional_data/4_et0_zone.R
+et0_zone_table_loc <- here("data", "4_for_analysis", "additional_data", "ET0_zone.csv")
+
 # A table with the location of a pixel and its crop type, sub crop type, and if multiple crops are grown on that pixel.
 # Pure pixels only. 
 # created in 1_generate_datasets/1_intermediate/additional_data/2_crops.R

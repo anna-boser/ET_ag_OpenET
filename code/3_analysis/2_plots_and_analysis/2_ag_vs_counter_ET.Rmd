@@ -15,8 +15,11 @@ library(maptools)
 library(data.table)
 library(sf)
 library(stringr)
+library(ggspatial)
+library(gstat) # for the variogram
 
 source(here("file_paths.R"))
+source(here("helper_functions.R"))
 ```
 
 
@@ -30,13 +33,42 @@ experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", 
 
 ```{r}
 data <- fread(file = here(experiment_path, "agriculture_yearly.csv"))
-data[data == -9999] <- NA # this is the na value
 ```
 
 ```{r}
 data <- data[cropnames != "Urban - residential, commercial, and industrial, unsegregated",] # remove urban
 data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow", data$cropnames) # rename unclassified
+```
 
+## variogram
+```{r, eval = FALSE}
+# plot a variogram 
+sample <- data[sample(nrow(data), size = 100000, replace = FALSE),] #subset data to calculate variogram
+sample$x <- (sample$x - min(sample$x))*89  # turn x into km 
+sample$y <- (sample$y - min(sample$y))*111
+
+vario_ET <- variogram(ET~1, data=sample, locations= ~x+y, cutoff= 100) 
+vario_ag_ET <- variogram(ag_ET~1, data=sample, locations= ~x+y, cutoff= 100) 
+
+vario_ET$type = "Observed ET"
+vario_ag_ET$type = "Agricultural ET"
+
+vario_ET2 <- rbind(vario_ET, vario_ag_ET)
+
+ggplot(vario_ET2) + 
+  geom_line(aes(x = dist, y = gamma, color = type)) + 
+  geom_point(aes(x = dist, y = gamma, color = type)) + 
+  scale_color_manual(values=c("seagreen", "navyblue")) + 
+  theme_classic() + 
+  theme(legend.position = c(.2, .85), 
+        legend.title=element_blank()) + 
+  xlab("Distance (km)") + 
+  ylab("Gamma")
+  
+```
+
+## histograms 
+```{r, eval = FALSE}
 # only keep fallow pixels that are in the test set
 test <- fread(test_data_loc)
 list <- unique(paste(test$x, test$y, test$year))
@@ -44,11 +76,7 @@ nrow(data)
 data <- data %>% filter(!(cropnames == "Fallow" & !(paste(x, y, year) %in% list)))
 nrow(data)
 rm(test)
-```
 
-
-## histograms 
-```{r}
 fallow <- filter(data, cropnames == "Fallow")
 hist_data <- filter(data, cropnames != "Fallow")
 
@@ -80,6 +108,9 @@ ggplot(hist_data) +
 ## Make maps of ET, ET_pred, and ag_ET
 
 ```{r}
+# remove fallow lands
+data <- data %>% filter(cropnames != "Fallow")
+
 # Average over years
 data <- data %>% group_by(x, y) %>% summarize(ET = mean(ET, na.rm=TRUE), 
                                                 ET_pred = mean(ET_pred, na.rm=TRUE), 
@@ -106,20 +137,29 @@ new.labs <- c("Observed ET", "Simulated fallow ET", "Agricultural ET")
 names(new.labs) <- c("ET", "ET_pred", "ag_ET")
 
 ggplot() + 
-  geom_sf(data = counties, color=alpha("white",1), size = .2) + 
+  geom_sf(data = counties, fill = "grey", color=alpha("white",1), size = .2) + 
   geom_raster(data = data, aes(x=x, y=y, fill=ET*scalar)) +
   facet_grid(cols=vars(type), labeller = labeller(type = new.labs)) +
   scale_fill_gradientn(name="ET (cm/year)", colours = c("darkgoldenrod2", "khaki1", "lightgreen",  "deepskyblue","mediumblue", "navyblue", "midnightblue", "black"), limits = c(-39.1, 234.6)) +
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
-  xlim(c(-122.92, -118.6)) + 
-  ylim(c(34.94, 40.754)) + 
+  xlim(c(minlong, maxlong)) + 
+  ylim(c(minlat, maxlat)) + 
+  annotation_scale() + 
   theme_classic() +
-  theme(legend.position = c(0.92, 0.79),
+  theme(legend.position = c(0.93, 0.74),
         axis.title.y=element_blank(),
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank(), 
         axis.title.x=element_blank(),
         axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+        axis.ticks.x=element_blank()) 
 ```
 
+```{r}
+# extra stuff to photoshop later
+ggplot() + 
+  geom_sf(data = counties, fill = "grey", color=alpha("white",1), size = .2) + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  theme_void() +
+  geom_rect(aes(xmin=minlong-.2, xmax=maxlong+.2, ymin=minlat-.2, ymax=maxlat+.2), color="black", fill="transparent")
+```
