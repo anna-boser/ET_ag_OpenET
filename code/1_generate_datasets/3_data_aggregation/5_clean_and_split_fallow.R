@@ -15,33 +15,34 @@ fallow <- fread(fallow_data_loc)
 
 # filter out the fallow pixels with 95% highest ET in the growing season
 gs <- filter(fallow, month %in% c(7,8,9)) %>%
-  group_by(x,y,year) %>% summarise(ET = mean(ET))
+  group_by(x,y,year) %>% summarise(ET = mean(ET)) 
 cutoff <- quantile(gs$ET, probs = seq(0,1,.95))[2]
 low_gs <- gs[gs$ET < cutoff,]
-
+high_gs <- gs[gs$ET > cutoff,]
+fwrite(high_gs, here("data", "3_for_counterfactual", "agriculture", "fallow_high_gs_ET.csv"), append=FALSE) # save so that you can also filter out these in analysis
 
 filtered_fallow <- fallow %>% filter(paste(fallow$x, fallow$y, fallow$year) %in% paste(low_gs$x, low_gs$y, low_gs$year))
 
 # split the data based on proximity (don't want the same field in both splits)
 # fields are about a km across tops (google satellite view)
 
-# create clusters based on location. Function creates clusters of size dist km.
+# create clusters based on location. Function creates clusters of size dist km. 
 assign_cluster <- function(x, y, dist){
-
+  
   x_size = dist/89 # 1 degree lon (x) = 89km = 89000m
   y_size = dist/111 # 1 degree lat (y) = 111km = 111000m
-
+  
   x_fold = floor(x/x_size)*x_size
   y_fold = floor(y/y_size)*y_size
-
+  
   cv_fold = paste(x_fold, y_fold, sep = ",")
-
+  
   return(cv_fold)
 }
 
 filtered_fallow$cluster <- mapply(assign_cluster, filtered_fallow$x, filtered_fallow$y, 1) #1km clusters
 
-# 60-10-30 train-val-test split
+# 60-10-30 train-val-test split 
 clusters <- unique(filtered_fallow$cluster)
 
 # training
@@ -54,7 +55,7 @@ val_cs <- sample(clusters, size = length(clusters)*.25, replace = FALSE) # 25% o
 # test
 test_cs <- clusters[!(clusters %in% val_cs)]
 
-# now split the actual data
+# now split the actual data 
 train <- filtered_fallow %>% filter(cluster %in% training_cs)
 val <- filtered_fallow %>% filter(cluster %in% val_cs)
 test <- filtered_fallow %>% filter(cluster %in% test_cs)

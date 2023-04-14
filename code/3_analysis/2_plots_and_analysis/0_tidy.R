@@ -65,3 +65,64 @@ if (months_ts == TRUE){
 }
 fwrite(data, here(experiment_path, "agriculture_yearly.csv"), append=FALSE)
 
+########################################################################
+# average by croptype and subcroptype
+data <- fread(here(experiment_path, "agriculture_tidy.csv"))
+
+######## clean data #######
+
+data <- data[cropnames != "",] # only keep data that has crop info (get rid of years without dwr data)
+data <- data[cropnames != "Urban - residential, commercial, and industrial, unsegregated",] # remove urban
+data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow", data$cropnames) # rename unclassified fallow to just fallow
+
+data <- filter(data, coverage_fraction>.5)
+
+# only keep fallow pixels that are in the test set
+test <- fread(test_data_loc)
+list <- unique(paste(test$x, test$y, test$year))
+data <- data %>% filter(!(paste(data$x, data$y, data$year) %in% list))
+rm(test)
+
+data$subcropnames <- ifelse(data$subcropnames == "", data$cropnames, data$subcropnames)
+
+# get rid of classes I'm not that interested in 
+data <- filter(data,  !(subcropnames %in% c("Greenhouse")))
+
+######### crop and subcrop averages by month ########
+c_df <- data %>% 
+  group_by(cropnames, month) %>%
+  summarize(ag_ET = mean(ag_ET), 
+            ET = mean(ET), 
+            ET_pred = mean(ET_pred))
+fwrite(c_df, here(experiment_path, "time_series_by_crop.csv"))
+
+sc_df <- data %>% 
+  group_by(subcropnames, month) %>%
+  summarize(ag_ET = mean(ag_ET), 
+            ET = mean(ET), 
+            ET_pred = mean(ET_pred)) 
+fwrite(sc_df, here(experiment_path, "time_series_by_subcrop.csv"))
+
+########################################################################
+# average by croptype&county and subcroptype&county for CalSIMETAW comparison
+
+# to combine with CalSIMETAW, combine pistachios and almonds together
+data$subcropnames <- ifelse(data$subcropnames %in% c("Pistachios", "Almonds"), "Almond & Pistacios", data$subcropnames)
+
+c_df <- data %>% 
+  group_by(cropnames, COUNTY_NAME = NAME, month) %>%
+  summarize(ag_ET = mean(ag_ET), 
+            ET = mean(ET), 
+            ET_pred = mean(ET_pred), 
+            latitude = mean(y))
+
+sc_df <- data %>% 
+  filter(subcropnames %in% CS$cropnames, month) %>%
+  group_by(cropnames = subcropnames, COUNTY_NAME = NAME, month) %>%
+  summarize(ag_ET = mean(ag_ET), 
+            ET = mean(ET), 
+            ET_pred = mean(ET_pred), 
+            latitude = mean(y)) %>% 
+  filter(!(cropnames %in% c_df$cropnames))
+
+fwrite(rbind(c_df, sc_df), here(experiment_path, "agriculture_monthly_county_crop.csv"))
