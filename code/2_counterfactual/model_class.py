@@ -1,6 +1,8 @@
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import GroupKFold
 from sklearn.model_selection import cross_val_predict
+from sklearn.model_selection import RandomizedSearchCV
 from pyprojroot import here
 import math
 import pickle
@@ -10,7 +12,7 @@ import time
 
 class MyModel():
 
-    def __init__(self, experiment_name, dataset, regressor, nans_ok=False, month=True, year=True, features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], hparam=False):
+    def __init__(self, experiment_name, dataset, regressor, nans_ok=False, month=True, year=True, features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"]):
 
         # locate the natural and agricultural datasets you may want to use
         self.train_data_loc = str(here("data/3_for_counterfactual/training_data/train")) + "/" + dataset + ".csv"
@@ -18,7 +20,6 @@ class MyModel():
 
         self.regressor = regressor
         self.nans_ok = nans_ok
-        self.hparam = hparam
         self.features = features
         self.experiment_name = experiment_name
         self.experiment_path = str(here("data/4_for_analysis/ML_outputs/experiments")) + "/" + experiment_name
@@ -32,24 +33,15 @@ class MyModel():
         shutil.copy(here("code/2_counterfactual/experiments.py"), self.experiment_path + "/experiments.py")
         shutil.copy(here("code/2_counterfactual/model_class.py"), self.experiment_path + "/model_class.py")
 
-    def crossval(self, train_or_test="train", distances=[50000, 20000, 10000, 5000, 2000, 1]):
+    def prepare_dataset(self, df):
 
-        # retrieve the dataset to crossvalidate over
-        if train_or_test=="train":
-            df = pd.read_csv(self.train_data_loc)
-        elif train_or_test=="test":
-            df = pd.read_csv(self.test_data_loc)
-        else: 
-            Exception("train_or_test must be 'train' or 'test'")
-
-        
         if self.nans_ok == False:
             df = df.fillna(-9999)
-    
-        # retrive the features (columns) of interest 
+
+        # split between predictors and predicted
         X = df[self.features]
         y = df['ET']
-    
+
         if self.month:
             df = pd.get_dummies(df, columns=["month"])
             X_months = df[df.columns[df.columns.str.startswith("month")]]
@@ -60,10 +52,65 @@ class MyModel():
             X_years = df[df.columns[df.columns.str.startswith("year")]]
             X = pd.concat([X, X_years], join = 'outer', axis = 1)
 
-        # retrieve the parameters..?
-        if self.hparam==True:
-            hyperparameters = pickle.load(open(self.experiment_path+"/model_parameters.pkl", 'rb')) #rb is read mode. 
-            print(hyperparameters, flush=True)
+        return X, y, df
+
+    def tune_hyperparameters(self, train_or_test="train"):
+        # This function gets hyperparameters using the training data and sets them in the regressor
+
+        # retrieve the dataset 
+        if train_or_test=="train":
+            df = pd.read_csv(self.train_data_loc)
+        else:
+            df = pd.read_csv(self.test_data_loc)
+        # there are about 200 pixels in each 1 km grid. try taking 0.005 of the data
+        df = df.sample(frac = 0.005)
+
+        X, y, df = self.prepare_dataset(df)
+
+        # try to improve the RF by tuning hyperparameters
+        # see: https://towardsdatascience.com/hyperparameter-tuning-the-random-forest-in-python-using-scikit-learn-28d2aa77dd74
+
+        # Number of trees in random forest
+        n_estimators = [int(x) for x in np.linspace(start = 100, stop = 2000, num = 100)]
+        # Maximum number of levels in tree
+        max_depth = [int(x) for x in np.linspace(10, 110, num = 11)]
+        max_depth.append(None)
+        # Minimum number of samples required to split a node
+        min_samples_split = [200]
+        # Minimum number of samples required at each leaf node
+        min_samples_leaf = [100]
+        # The number of features to consider while searching for a best split. 
+        max_features = [2, 3]
+
+        # Create the random grid
+        random_grid = {'n_estimators': n_estimators,
+                    'max_depth': max_depth,
+                    'min_samples_split': min_samples_split,
+                    'min_samples_leaf': min_samples_leaf, 
+                    'max_features': max_features}
+
+        # Use the random grid to search for best hyperparameters
+        # Random search of parameters, using 3 fold cross validation, 
+        # search across 100 different combinations, and use all available cores
+        random_search = RandomizedSearchCV(estimator = self.regressor, param_distributions = random_grid, n_iter = 100, cv = 3, verbose=2, random_state=42, n_jobs = -1)
+        random_search.fit(X, y)
+        hyperparameters = random_search.best_params_
+
+        self.regressor.set_params(**hyperparameters) # use the parameters from the randomized search
+
+        return hyperparameters
+
+    def crossval(self, train_or_test="train", distances=[50000, 20000, 10000, 5000, 2000, 1]):
+
+        # retrieve the dataset to crossvalidate over
+        if train_or_test=="train":
+            df = pd.read_csv(self.train_data_loc)
+        elif train_or_test=="test":
+            df = pd.read_csv(self.test_data_loc)
+        else: 
+            Exception("train_or_test must be 'train' or 'test'")
+
+        X, y, df = self.prepare_dataset(df)
         
         cols = list(df) + ['fold_size', 'cv_fold', "ET_pred"]
         cv_df = pd.DataFrame(columns=cols)
@@ -93,9 +140,6 @@ class MyModel():
             kf = GroupKFold(5) #leave out 20% of the data at a time
             split = kf.split(df, groups = df['cv_fold'])
 
-            if self.hparam==True:
-                self.regressor.set_params(**hyperparameters) # use the parameters from the randomized search
-            
             print("predictions beginning", flush=True)
             start = time.time()
             y_pred = cross_val_predict(self.regressor, X, y, cv=split, verbose=1, n_jobs = -1)
@@ -114,7 +158,6 @@ class MyModel():
 
     def train_model(self, train_or_test="train"):
 
-        # train the model on the whole set that was 
         print("Training model from scratch; loading dataset", flush=True)  
 
         # load full dataset
@@ -123,28 +166,8 @@ class MyModel():
         else:
             df = pd.read_csv(self.test_data_loc)
 
-        if self.nans_ok == False:
-            df = df.fillna(-9999)
+        X, y, df = self.prepare_dataset(df)
 
-        # split between predictors and predicted
-        X = df[self.features]
-        y = df['ET']
-
-        if self.month:
-            df = pd.get_dummies(df, columns=["month"])
-            X_months = df[df.columns[df.columns.str.startswith("month")]]
-            X = pd.concat([X, X_months], join = 'outer', axis = 1)
-
-        if self.year:
-            df = pd.get_dummies(df, columns=["year"])
-            X_years = df[df.columns[df.columns.str.startswith("year")]]
-            X = pd.concat([X, X_years], join = 'outer', axis = 1)
-
-        if self.hparam==True:
-            # retrieve the parameters that were generated in 3_hyperparameter_tuning
-            hyperparameters = pickle.load(open(str(here("./data/for_analysis/hyperparameter_tune/"))+"/model_parameters.pkl", 'rb')) #rb is read mode. 
-            self.regressor.set_params(**hyperparameters) # use the parameters from the randomized search
-            
         print("regressor defined, training beginning", flush=True)
         self.regressor.fit(X, y)
         print("training completed; pickle beginning", flush=True)
@@ -162,22 +185,7 @@ class MyModel():
         application_data_location = str(here("data/3_for_counterfactual/agriculture")) + "/" + ag_or_fallow + ".csv"
         df = pd.read_csv(application_data_location)
 
-        if self.nans_ok == False:
-            df = df.fillna(-9999)
-
-        # split between predictors and predicted
-        X = df[self.features]
-        y = df['ET']
-
-        if self.month:
-            df = pd.get_dummies(df, columns=["month"])
-            X_months = df[df.columns[df.columns.str.startswith("month")]]
-            X = pd.concat([X, X_months], join = 'outer', axis = 1)
-
-        if self.year:
-            df = pd.get_dummies(df, columns=["year"])
-            X_years = df[df.columns[df.columns.str.startswith("year")]]
-            X = pd.concat([X, X_years], join = 'outer', axis = 1)
+        X, y, df = self.prepare_dataset(df)
 
         y_pred = self.regressor.predict(X)
         df = df.assign(ET_pred=y_pred)
@@ -195,22 +203,26 @@ class MyModel():
 if __name__ == '__main__':
 
     from sklearn.ensemble import RandomForestRegressor
+    from sklearn.ensemble import HistGradientBoostingRegressor
+    from sklearn.ensemble import GradientBoostingRegressor
 
     # first, define your model 
-    model = MyModel(experiment_name="exp_cpad_trial", 
-                    dataset="cpad", 
+    model = MyModel(experiment_name="trial_model", 
+                    dataset="fallow", 
                     regressor=RandomForestRegressor(n_estimators=100, verbose=1, random_state=0, n_jobs = -1), 
-                    nans_ok=False, 
-                    month=True,
-                    features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 
-                    hparam=False)
+                    nans_ok=False, # whether it's ok to have nans in the data
+                    month=True, # whether the data has a month variable
+                    year=True, # whether the data has a year variable
+                    features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"])
 
-    # second, perform a cross-validation using the test set
-    model.crossval(train_or_test="train")
+    # second, tune hyperparameters 
+    model.tune_hyperparameters(train_or_test="train")
+
+    # optionally, perform a cross-validation using the training set -- only if there's large spatial gaps in available data
+    # model.crossval(train_or_test="train")
 
     # third, generate new predictions for fallow lands
     model.train_model(train_or_test="train")
-    model.predictions(ag_or_fallow="fallow")
-
-
-
+    model.predictions(ag_or_fallow="fallow_val")
+    model.predictions(ag_or_fallow="fallow_test")
+    model.predictions(ag_or_fallow="agriculture_dwr_years")

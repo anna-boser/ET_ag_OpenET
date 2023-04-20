@@ -11,17 +11,42 @@ from sklearn.ensemble import RandomForestRegressor
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 
+# # first, define your model 
+# model = MyModel(experiment_name="fallow0.05,2_4-18_gb_xy", 
+#                 dataset="fallow0.05,2", 
+#                 regressor=GradientBoostingRegressor(verbose=1, random_state=0), 
+#                 nans_ok=False,
+#                 month=True,
+#                 year=True,
+#                 features=["x", "y"])# ["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"])
+
+# # second, (optionally) tune hyperparameters 
+# hyperparameters = model.tune_hyperparameters(train_or_test="train")
+# print(hyperparameters, flush=True) # check what hyperparameters you ended up with
+
+# # optionally, perform a cross-validation using the training set -- only if there's large spatial gaps in available data
+# # model.crossval(train_or_test="train")
+
+# # third, generate new predictions for fallow lands
+# model.train_model(train_or_test="train")
+# model.predictions(ag_or_fallow="fallow_val")
+# model.predictions(ag_or_fallow="fallow_test")
+# model.predictions(ag_or_fallow="agriculture_dwr_years")
+
 # first, define your model 
-model = MyModel(experiment_name="fallow_3-9_gb", 
-                dataset="fallow", 
+model = MyModel(experiment_name="fallow0.05,2_4-18_gb_no_xy", 
+                dataset="fallow0.05,2", 
                 regressor=GradientBoostingRegressor(verbose=1, random_state=0), 
                 nans_ok=False,
                 month=True,
                 year=True,
-                features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 
-                hparam=False)
+                features= ["Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"])
 
-# second, perform a cross-validation using the training set
+# second, (optionally) tune hyperparameters 
+hyperparameters = model.tune_hyperparameters(train_or_test="train")
+print(hyperparameters, flush=True) # check what hyperparameters you ended up with
+
+# optionally, perform a cross-validation using the training set -- only if there's large spatial gaps in available data
 # model.crossval(train_or_test="train")
 
 # third, generate new predictions for fallow lands
@@ -29,26 +54,3 @@ model.train_model(train_or_test="train")
 model.predictions(ag_or_fallow="fallow_val")
 model.predictions(ag_or_fallow="fallow_test")
 model.predictions(ag_or_fallow="agriculture_dwr_years")
-# model.predictions(ag_or_fallow="fallow") # this no longer works ever since I don't have every year in as fallow since it creates a dummy for the year and then is missing columns. 
-
-# first, define your model 
-model = MyModel(experiment_name="fallow_no_controls_3-9_gb", 
-                dataset="fallow", 
-                regressor=GradientBoostingRegressor(verbose=1, random_state=0), 
-                nans_ok=False,
-                month=True,
-                year=True,
-                features=["x", "y"], #, "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"], 
-                hparam=False)
-
-# second, perform a cross-validation using the training set
-# model.crossval(train_or_test="train")
-
-# third, generate new predictions for fallow lands
-model.train_model(train_or_test="train")
-model.predictions(ag_or_fallow="fallow_val")
-model.predictions(ag_or_fallow="fallow_test")
-model.predictions(ag_or_fallow="fallow_test")
-model.predictions(ag_or_fallow="agriculture_dwr_years")
-# model.predictions(ag_or_fallow="fallow") # this no longer works ever since I don't have every year in as fallow since it creates a dummy for the year and then is missing columns. 
-
