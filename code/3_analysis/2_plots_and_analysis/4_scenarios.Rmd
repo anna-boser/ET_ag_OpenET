@@ -16,6 +16,7 @@ library(tidyr)
 library(dplyr)
 library(ggplot2)
 library(latex2exp)
+library(ggspatial)
 library(lfe)
 
 source(here("file_paths.R"))
@@ -24,13 +25,17 @@ source(here("helper_functions.R"))
 
 ## Read in the data
 ```{r}
-experiment_name <- "fallow_3-9_gb"
+experiment_name <- "fallow0.05,2_4-18_gb"
+# experiment_name <- "fallow0,2_4-23_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 data <- fread(file = here(experiment_path, "agriculture_yearly.csv"))
 
 # study area and counties for plotting
 study_area <- st_read(study_area_loc) %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
 counties <- st_read(counties_loc) %>% filter(STATEFP == "06") %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
+
+report <- here(experiment_path, "4_report.txt")
+if (file.exists(report)) {file.remove(report)} # start fresh every time you render
 ```
 
 # clean data
@@ -52,6 +57,9 @@ data <- filter(data,  subcropnames != "Greenhouse")
 
 # combine potatoes and "potatoes or sweet potato"
 data$subcropnames <- ifelse(data$subcropnames %in% c("Potatoes", "Potato or Sweet potato"), "Potato or Sweet potato", data$subcropnames)
+
+# control for variation across years
+data <- year_control(data)
 ```
 
 ```{r}
@@ -112,7 +120,6 @@ data$fallow <- ifelse(data$ag_ET > data$basin_95, 0, data$ag_ET)
 ```{r}
 # get the percent saved for each intervention
 scenarios <- data %>% 
-  group_by(subbasin_n) %>% 
   summarise(med_crop_switch = 100 - mean(med_crop_switch)/mean(ag_ET)*100, 
             min_crop_switch = 100 - mean(min_crop_switch)/mean(ag_ET)*100, 
             median_same_crop = 100 - mean(median_same_crop)/mean(ag_ET)*100, 
@@ -121,8 +128,19 @@ scenarios <- data %>%
                names_to = "Intervention", 
                values_to = "Percent_savings")
 
-scenarios$Percent_savings <- ifelse(scenarios$Percent_savings < 0 , 0, scenarios$Percent_savings)
-scenarios$Percent_savings <- ifelse(scenarios$Percent_savings > 100 , 100, scenarios$Percent_savings)
+line <- print(scenarios, n = nrow(scenarios))
+fwrite(line,file=report,append=TRUE)
+
+# scenarios by basin for plotting
+scenarios <- data %>% 
+  group_by(subbasin_n) %>% 
+  summarise(med_crop_switch = 100 - mean(med_crop_switch)/mean(ag_ET)*100, 
+            min_crop_switch = 100 - mean(min_crop_switch)/mean(ag_ET)*100, 
+            median_same_crop = 100 - mean(median_same_crop)/mean(ag_ET)*100, 
+            fallow = 100 - mean(fallow)/mean(ag_ET)*100) %>%
+  pivot_longer(cols = c("med_crop_switch", "min_crop_switch", "median_same_crop", "fallow"), 
+               names_to = "Intervention", 
+               values_to = "Percent_savings")
 
 # basins 
 basin_poly <- st_read(basin_loc) 
@@ -134,27 +152,39 @@ scenarios <- merge(basin_poly, scenarios, by = "subbasin_n", all.x = TRUE)
 
 ```{r}
 
-new.labs <- c("Switch to median crop", "Switch to minimum crop", "Same crop; reduce to median", "Fallow 5% of land")
+new.labs <- c("Crop-switching", "Switch to minimum crop", "Farming practices", "Fallowing 5%")
 names(new.labs) <- c("med_crop_switch", "min_crop_switch", "median_same_crop", "fallow")
 
 scenarios$Intervention <- factor(scenarios$Intervention, levels = c("med_crop_switch", "min_crop_switch", "median_same_crop", "fallow"))
 
-filter(scenarios, Intervention != "min_crop_switch") %>% 
+filter(scenarios, !(Intervention %in% c("min_crop_switch"))) %>% 
 #scenarios %>%
   ggplot() + 
   geom_sf(data = counties, fill = "grey", color=alpha("white",1), size = .2) + 
   geom_sf(aes(fill = Percent_savings), color=alpha("black",.3), size = .2) + 
   facet_grid(cols = vars(Intervention), labeller = labeller(Intervention = new.labs)) +
-  scale_fill_distiller(palette="Blues", direction=1, name = "% Savings") + 
+  scale_fill_distiller(palette="Blues", direction=1, name = "% Savings", breaks = seq(0, 40, by = 10)) + 
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   xlim(c(minlong, maxlong)) + 
   ylim(c(minlat, maxlat)) + 
   theme_classic() +
-  theme(legend.position = c(0.93, 0.74),
+  annotation_scale(data = tibble::tibble(Intervention = as.factor("med_crop_switch")), text_cex=.6, height=unit(0.2, "cm")) + 
+  theme(legend.position = c(0.934, 0.867), 
+        legend.direction = "horizontal",
+        legend.title = element_text(size = 8), 
+        legend.text = element_text(size = 7), 
         axis.title.y=element_blank(),
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank(), 
         axis.title.x=element_blank(),
         axis.text.x=element_blank(),
-        axis.ticks.x=element_blank())
+        axis.ticks.x=element_blank(), 
+        strip.text.x = element_text(size = 8), 
+        legend.key.width = unit(dev.size()[1] / 40, "inches")) + 
+  guides(fill = guide_colourbar(title.position="top", title.hjust = 0.5, override.aes = list(size = 0.5))) 
+
+ggsave(here(experiment_path, "Figure_3.pdf"), 
+       width = 17.8,
+       height = 8.9,
+       units = "cm")
 ```

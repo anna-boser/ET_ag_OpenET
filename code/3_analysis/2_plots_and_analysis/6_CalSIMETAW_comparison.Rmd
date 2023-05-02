@@ -24,6 +24,9 @@ source(here("helper_functions.R"))
 ```{r}
 experiment_name <- "fallow0.05,2_4-18_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+
+report <- here(experiment_path, "6_report.txt")
+if (file.exists(report)) {file.remove(report)} # start fresh every time you render
 ```
 
 
@@ -117,165 +120,33 @@ scatter_data <- CS %>%
             AW = mean(AW)*scalar)
 ```
 
-# simetaw-rain (monthly) vs ag ET (yearly)
-```{r, eval = FALSE}
-ggplot(scatter_data) + 
-  geom_abline(intercept=0,slope=1, color="red") + 
-  geom_point(aes(x = ag_ET, y = ag_ET_need)) + 
-  geom_smooth(aes(x = ag_ET, y = ag_ET_need), method="lm") + 
-  theme_classic() + 
-  xlab("Empirical Agricultural ET (cm/year)") + 
-  ylab("CalSIMETAW Agricultural ET (cm/year)") +
-  coord_fixed() + 
-  xlim(c(min(scatter_data$ag_ET_need, scatter_data$ag_ET), max(scatter_data$ag_ET_need, scatter_data$ag_ET))) +
-  ylim(c(min(scatter_data$ag_ET_need, scatter_data$ag_ET), max(scatter_data$ag_ET_need, scatter_data$ag_ET)))
-
-lm(ag_ET_need~ag_ET, scatter_data) %>% summary() %>% print()
-
-bias <- mean(scatter_data$ag_ET_need - scatter_data$ag_ET)
-se <- sd(scatter_data$ag_ET_need - scatter_data$ag_ET)/sqrt(nrow(scatter_data))
-print_CI("simetaw-rain (monthly) vs ag ET (yearly)", bias, se)
-print_CI("bias as percent of theoretical", (bias/mean(scatter_data$ag_ET_need))*100, (se/mean(scatter_data$ag_ET_need))*100)
-```
-
-# simetaw-ET_pred (monthly) vs ag ET (yearly)
-```{r, eval = FALSE}
-ggplot(scatter_data) + 
-  geom_abline(intercept=0,slope=1, color="red") + 
-  geom_point(aes(x = ag_ET, y = ETc_ET_pred)) + 
-  geom_smooth(aes(x = ag_ET, y = ETc_ET_pred), method="lm") + 
-  theme_classic() + 
-  xlab("Empirical Agricultural ET (cm/year)") + 
-  ylab("CalSIMETAW Agricultural ET (cm/year)") +   
-  coord_fixed() + 
-  xlim(c(min(scatter_data$ETc_ET_pred, scatter_data$ag_ET), max(scatter_data$ETc_ET_pred, scatter_data$ag_ET))) +
-  ylim(c(min(scatter_data$ETc_ET_pred, scatter_data$ag_ET), max(scatter_data$ETc_ET_pred, scatter_data$ag_ET)))
-
-lm(ETc_ET_pred~ag_ET, scatter_data) %>% summary()
-
-bias <- mean(scatter_data$ETc_ET_pred - scatter_data$ag_ET)
-se <- sd(scatter_data$ETc_ET_pred - scatter_data$ag_ET)/sqrt(nrow(scatter_data))
-print_CI("simetaw-ET_pred (monthly) vs ag ET (yearly)", bias, se)
-print_CI("bias as percent of theoretical", (bias/mean(scatter_data$ETc_ET_pred))*100, (se/mean(scatter_data$ETc_ET_pred))*100)
-```
-
 # simetaw-ET_pred (monthly) vs ag ET (monthly)
 ```{r}
-ggplot(scatter_data) + 
-  geom_abline(intercept=0,slope=1, color="red") + 
-  geom_point(aes(x = ET_ET_pred, y = ETc_ET_pred)) + 
-  geom_smooth(aes(x = ET_ET_pred, y = ETc_ET_pred), method="lm") + 
-  theme_classic() + 
-  xlab("Empirical Agricultural ET (cm/year)") + 
-  ylab("CalSIMETAW Agricultural ET (cm/year)") + 
-  coord_fixed() + 
-  xlim(c(min(scatter_data$ETc_ET_pred, scatter_data$ET_ET_pred), max(scatter_data$ETc_ET_pred, scatter_data$ET_ET_pred))) +
-  ylim(c(min(scatter_data$ETc_ET_pred, scatter_data$ET_ET_pred), max(scatter_data$ETc_ET_pred, scatter_data$ET_ET_pred)))
-
 lm(ETc_ET_pred~ET_ET_pred, scatter_data) %>% summary()
-paste("correlation:", cor(scatter_data$ETc_ET_pred,scatter_data$ET_ET_pred))
+line <- paste("correlation for simetaw-ET_pred (monthly) vs ag ET (monthly):", cor(scatter_data$ETc_ET_pred,scatter_data$ET_ET_pred))
+write(line,file=report,append=TRUE)
 
 bias <- mean(scatter_data$ETc_ET_pred - scatter_data$ET_ET_pred)
 se <- sd(scatter_data$ETc_ET_pred - scatter_data$ET_ET_pred)/sqrt(nrow(scatter_data))
-print_CI("simetaw-ET_pred (monthly) vs ag ET (monthly)", bias, se)
-print_CI("bias as percent of theoretical", (bias/mean(scatter_data$ETc_ET_pred))*100, (se/mean(scatter_data$ETc_ET_pred))*100)
+line <- print_CI("bias simetaw-ET_pred (monthly) vs ag ET (monthly)", bias, se)
+write(line,file=report,append=TRUE)
+line <- print_CI("bias as percent of theoretical", (bias/mean(scatter_data$ETc_ET_pred))*100, (se/mean(scatter_data$ETc_ET_pred))*100)
+write(line,file=report,append=TRUE)
 ```
 
-```{r}
-cols <- c("#89C5DA", "#DA5724", "#74D944", "#CE50CA", "#3F4921", "#C0717C", "#CBD588", "#5F7FC7", 
-"#673770", "#D3D93E", "#38333E", "#508578", "#D7C1B1", "#689030", "#AD6F3B", "#CD9BCD", 
-"#D14285", "#6DDE88")
-ggplot(scatter_data) + 
-  geom_abline(intercept=0,slope=1, color="red") + 
-  geom_point(aes(x = ET_ET_pred, y = ETc_ET_pred, color = cropnames)) + 
-  scale_color_manual(values=cols) + 
-  geom_smooth(aes(x = ET_ET_pred, y = ETc_ET_pred), method="lm") + 
-  theme_classic() + 
-  ylab("CalSIMETAW Agricultural ET (cm/year)") + 
-  xlab("Empirical Agricultural ET (cm/year)") + 
-  coord_fixed() + 
-  xlim(c(min(scatter_data$ETc_ET_pred, scatter_data$ET_ET_pred), max(scatter_data$ETc_ET_pred, scatter_data$ET_ET_pred))) +
-  ylim(c(min(scatter_data$ETc_ET_pred, scatter_data$ET_ET_pred), max(scatter_data$ETc_ET_pred, scatter_data$ET_ET_pred)))
-```
 
 # simetaw-rain (monthly) vs ag ET (monthly)
 ```{r}
-ggplot(scatter_data) + 
-  geom_abline(intercept=0,slope=1, color="red") + 
-  geom_point(aes(x = ET_ET_pred, y = ag_ET_need)) + 
-  geom_smooth(aes(x = ET_ET_pred, y = ag_ET_need), method="lm") + 
-  theme_classic() + 
-  ylab("CalSIMETAW Agricultural ET (cm/year)") + 
-  xlab("Empirical Agricultural ET (cm/year)") + 
-  coord_fixed() + 
-  xlim(c(min(scatter_data$ag_ET_need, scatter_data$ET_ET_pred), max(scatter_data$ag_ET_need, scatter_data$ET_ET_pred))) +
-  ylim(c(min(scatter_data$ag_ET_need, scatter_data$ET_ET_pred), max(scatter_data$ag_ET_need, scatter_data$ET_ET_pred)))
-
 lm(ag_ET_need~ET_ET_pred, scatter_data) %>% summary()
-paste("correlation:", cor(scatter_data$ag_ET_need,scatter_data$ET_ET_pred))
+line <- paste("correlation for simetaw-rain (monthly) vs ag ET (monthly):", cor(scatter_data$ag_ET_need,scatter_data$ET_ET_pred))
+write(line,file=report,append=TRUE)
 
 bias <- mean(scatter_data$ag_ET_need - scatter_data$ET_ET_pred)
 se <- sd(scatter_data$ag_ET_need - scatter_data$ET_ET_pred)/sqrt(nrow(scatter_data))
-print_CI("simetaw-rain (monthly) vs ag ET (monthly)", bias, se)
-print_CI("bias as percent of theoretical", (bias/mean(scatter_data$ag_ET_need))*100, (se/mean(scatter_data$ag_ET_need))*100)
-```
-
-```{r}
-cols <- c("#89C5DA", "#DA5724", "#74D944", "#CE50CA", "#3F4921", "#C0717C", "#CBD588", "#5F7FC7", 
-"#673770", "#D3D93E", "#38333E", "#508578", "#D7C1B1", "#689030", "#AD6F3B", "#CD9BCD", 
-"#D14285", "#6DDE88")
-ggplot(scatter_data) + 
-  geom_abline(intercept=0,slope=1, color="red") + 
-  geom_point(aes(x = ET_ET_pred, y = ag_ET_need, color = cropnames)) + 
-  scale_color_manual(values=cols) + 
-  geom_smooth(aes(x = ET_ET_pred, y = ag_ET_need), method="lm") + 
-  theme_classic() + 
-  ylab("CalSIMETAW Agricultural ET (cm/year)") + 
-  xlab("Empirical Agricultural ET (cm/year)") + 
-  coord_fixed() + 
-  xlim(c(min(scatter_data$ag_ET_need, scatter_data$ET_ET_pred), max(scatter_data$ag_ET_need, scatter_data$ET_ET_pred))) +
-  ylim(c(min(scatter_data$ag_ET_need, scatter_data$ET_ET_pred), max(scatter_data$ag_ET_need, scatter_data$ET_ET_pred)))
-```
-
-# ET_aw (monthly) vs ag ET (monthly). Do not use this because the readme does not specify if they assume irrigation efficiency is 0: https://data.ca.gov/dataset/cal-simetaw-unit-values/resource/ca06a0cf-d2a4-433d-99db-672b147afd5d
-
-```{r, eval = FALSE}
-ggplot(scatter_data) + 
-  geom_abline(intercept=0,slope=1, color="red") + 
-  geom_point(aes(x = ET_ET_pred, y = AW)) + 
-  geom_smooth(aes(x = ET_ET_pred, y = AW), method="lm") + 
-  theme_classic() + 
-  ylab("CalSIMETAW Agricultural ET (cm/year)") + 
-  xlab("Empirical Agricultural ET (cm/year)") + 
-  coord_fixed() + 
-  xlim(c(min(scatter_data$AW, scatter_data$ET_ET_pred), max(scatter_data$AW, scatter_data$ET_ET_pred))) +
-  ylim(c(min(scatter_data$AW, scatter_data$ET_ET_pred), max(scatter_data$AW, scatter_data$ET_ET_pred)))
-
-lm(AW~ET_ET_pred, scatter_data) %>% summary()
-paste("correlation:", cor(scatter_data$AW,scatter_data$ET_ET_pred))
-
-bias <- mean(scatter_data$AW - scatter_data$ET_ET_pred)
-se <- sd(scatter_data$AW - scatter_data$ET_ET_pred)/sqrt(nrow(scatter_data))
-print_CI("ET_aw (monthly) vs ag ET (monthly)", bias, se)
-print_CI("bias as percent of theoretical", (bias/mean(scatter_data$AW))*100, (se/mean(scatter_data$AW))*100)
-```
-
-```{r, eval = FALSE}
-cols <- c("#89C5DA", "#DA5724", "#74D944", "#CE50CA", "#3F4921", "#C0717C", "#CBD588", "#5F7FC7", 
-"#673770", "#D3D93E", "#38333E", "#508578", "#D7C1B1", "#689030", "#AD6F3B", "#CD9BCD", 
-"#D14285", "#6DDE88")
-ggplot(scatter_data) + 
-  geom_abline(intercept=0,slope=1, color="red") + 
-  geom_point(aes(x = ET_ET_pred, y = AW, color = cropnames)) + 
-  scale_color_manual(values=cols) + 
-  geom_smooth(aes(x = ET_ET_pred, y = AW), method="lm") + 
-  theme_classic() + 
-  ylab("CalSIMETAW Agricultural ET (cm/year)") + 
-  xlab("Empirical Agricultural ET (cm/year)") + 
-  coord_fixed() + 
-  xlim(c(min(scatter_data$AW, scatter_data$ET_ET_pred), max(scatter_data$AW, scatter_data$ET_ET_pred))) +
-  ylim(c(min(scatter_data$AW, scatter_data$ET_ET_pred), max(scatter_data$AW, scatter_data$ET_ET_pred)))
-  
+line <- print_CI("bias simetaw-rain (monthly) vs ag ET (monthly)", bias, se)
+write(line,file=report,append=TRUE)
+line <- print_CI("bias as percent of theoretical", (bias/mean(scatter_data$ag_ET_need))*100, (se/mean(scatter_data$ag_ET_need))*100)
+write(line,file=report,append=TRUE)
 ```
 
 
@@ -303,28 +174,12 @@ ggplot(fin_data) +
   xlim(c(min(fin_data$CalSIMETAW, fin_data$ET_ET_pred), max(fin_data$CalSIMETAW, fin_data$ET_ET_pred))) +
   ylim(c(min(fin_data$CalSIMETAW, fin_data$ET_ET_pred), max(fin_data$CalSIMETAW, fin_data$ET_ET_pred))) +
   guides(color=guide_legend(title="Crop type")) + 
-  theme(axis.title.x = element_text(size=14), 
-        axis.title.y = element_text(size=14), 
-        strip.text.x = element_text(size=14))
-```
+  theme(axis.title.x = element_text(size=12), 
+        axis.title.y = element_text(size=12), 
+        strip.text.x = element_text(size=12))
 
-
-# Precipitation vs natural ET
-```{r}
-ggplot(scatter_data) + 
-  geom_abline(intercept=0,slope=1, color="red") + 
-  geom_point(aes(x = ET_pred, y = Pcp)) + 
-  geom_smooth(aes(x = ET_pred, y = Pcp), method="lm") + 
-  theme_classic() + 
-  xlab("Simulated naturally-occurring ET (cm/year)") + 
-  ylab("CalSIMETAW Precipitation (cm/year)") + 
-  coord_fixed() + 
-  xlim(c(min(scatter_data$ET_pred, scatter_data$Pcp), max(scatter_data$ET_pred, scatter_data$Pcp))) +
-  ylim(c(min(scatter_data$ET_pred, scatter_data$Pcp), max(scatter_data$ET_pred, scatter_data$Pcp)))
-
-lm(Pcp~ET_pred, scatter_data) %>% summary()
-
-bias <- mean(scatter_data$Pcp - scatter_data$ET_pred)
-se <- sd(scatter_data$Pcp - scatter_data$ET_pred)/sqrt(nrow(scatter_data))
-print_CI("rain vs naturally-occurring ET bais", bias, se)
+ggsave(here(experiment_path, "Figure_S6.pdf"), 
+       width = 27,
+       height = 12,
+       units = "cm")
 ```

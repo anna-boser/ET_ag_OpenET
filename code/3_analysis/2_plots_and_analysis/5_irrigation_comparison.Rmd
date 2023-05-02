@@ -8,6 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(here)
+library(ggpubr)
 library(stringr)
 library(sf)
 library(data.table)
@@ -17,6 +18,7 @@ library(latex2exp)
 library(ggplot2)
 library(lfe)
 library(rgdal)
+library(ggspatial)
 library(ggnewscale) # allows you to plot multiple things with different scales on one ggplot
 
 source(here("file_paths.R"))
@@ -26,10 +28,14 @@ source(here("helper_functions.R"))
 
 ## Read in the data
 ```{r}
-experiment_name <- "fallow_3-9_gb"
+experiment_name <- "fallow0.05,2_4-18_gb"
+# experiment_name <- "fallow0,2_4-23_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 ET_year <- NA
 irr_year <- NA
+
+report <- here(experiment_path, "5_report.txt")
+if (file.exists(report)) {file.remove(report)} # start fresh every time you render
 ```
 
 ```{r}
@@ -39,21 +45,11 @@ data <- data[cropnames != "Urban - residential, commercial, and industrial, unse
 data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow", data$cropnames) # rename unclassified
 data <- filter(data, cropnames != "Fallow")
 
-# average over years/select your year of choice
-if (!is.na(ET_year)){
-  data <- filter(data, year == ET_year)
-} else {
-  data <- data %>% group_by(x, y, NAME, Soil) %>% summarize(ag_ET = mean(ag_ET), 
-                                                      PET = mean(PET), 
-                                                      ET_pred = mean(ET_pred), 
-                                                      ET = mean(ET))
-}
-```
-
-Assign a cluster to get the proper standard errors
-```{r}
 # create clusters based on location. Function creates clusters of size dist km. 
 data$cluster <- mapply(assign_cluster, data$x, data$y, 75)
+
+# control for variation across years
+data <- year_control(data)
 ```
 
 I then need to get the total water ETd
@@ -62,10 +58,23 @@ Since it's in mm/month, I need to multiply by the number of months
 data$ag_ET_year <- data$ag_ET*12
 ```
 
-Use a clustered standard errors regression to retrieve the water consumption by county
+Use a clustered standard errors regression to retrieve the water consumption by county. 
+This is specifically for the average over all the years (or my year of interest) so I can get county specific confidence intervals. 
 ```{r}
+# average over years/select your year of choice
+if (!is.na(ET_year)){
+  data_sub <- filter(data, year == ET_year)
+} else {
+  data_sub <- data %>% group_by(x, y, NAME, Soil, cluster) %>% summarize(
+    ag_ET_year = mean(ag_ET_year),
+    ag_ET = mean(ag_ET),
+    PET = mean(PET),
+    ET_pred = mean(ET_pred),
+    ET = mean(ET))
+}
+
 # get confidence intervals using clustered standard errors
-ag_ET <- felm(ag_ET_year~NAME-1 | 0 | 0 | cluster, data) #+year
+ag_ET <- felm(ag_ET_year~NAME-1 | 0 | 0 | cluster, data_sub) 
 
 # extract the mean and ci values from each
 df_from_felm <- function(input_lm){
@@ -84,7 +93,7 @@ ET_df <- df_from_felm(ag_ET)
 Add back in some more information about the counties
 ```{r}
 # average over county
-county_avg <- data %>%
+county_avg <- data_sub %>%
   group_by(NAME) %>% # group by county here
   summarize(
     lon = mean(x, na.rm=TRUE),
@@ -94,13 +103,27 @@ county_avg <- data %>%
     ET_pred = mean(ET_pred, na.rm=TRUE),
     ag_ET = mean(ag_ET, na.rm=TRUE),
     PET = mean(PET, na.rm=TRUE),
-    ET_pred = mean(ET_pred, na.rm=TRUE),
     n = n()) #get the number of pixels in each county
 
 # add other information about the counties back in 
 ET_df <- merge(ET_df, county_avg, by = "NAME")
 ```
 
+Get a separate dataset of the ag ET by county over different years, but no confidence intervals this time. 
+```{r}
+all_years <- data %>%
+  group_by(NAME, year) %>% # group by county here
+  summarize(
+    ag_ET_mm_year = mean(ag_ET_year, na.rm = TRUE),
+    lon = mean(x, na.rm=TRUE),
+    lat = mean(y, na.rm=TRUE),
+    soil = mean(Soil, na.rm=TRUE),
+    ET = mean(ET, na.rm=TRUE), # all these are mm/day
+    ET_pred = mean(ET_pred, na.rm=TRUE),
+    ag_ET = mean(ag_ET, na.rm=TRUE),
+    PET = mean(PET, na.rm=TRUE),
+    n = n())
+```
 
 ## USGS Irrigation data
 
@@ -114,8 +137,8 @@ irrigation2010 <- read.csv(here(usgs_irr_path,
                        "2010",
                        "water_use"), sep = "\t")[-1,] #first row just tells you the size of the entries; remove
 
-irrigation2015$year <- 2015
-irrigation2010$year <- 2010
+irrigation2015$irryear <- 2015
+irrigation2010$irryear <- 2010
 
 irrigation <- rbind(irrigation2015, irrigation2010)
 
@@ -175,7 +198,7 @@ if (is.na(irr_year)){
             sprinkler = mean(sprinkler))
 } else {
   # or just use one year
-irrigation_avg <- irrigation %>% filter(year == irr_year)
+irrigation_avg <- irrigation %>% filter(irryear == irr_year)
 irrigation_avg$year <- NULL
 }
 
@@ -189,6 +212,22 @@ efficiency_df$irrigation_efficiency_min <- efficiency_df$ag_ET_min*100/efficienc
 efficiency_df$irrigation_efficiency_max <- efficiency_df$ag_ET_max*100/efficiency_df$mm.year
 ```
 
+```{r}
+# mix and match all years to get irrigation efficiencies
+combo <- data.table()
+for (ag_y in c(2016, 2018, 2019)){
+  for (irr_y in c(2010, 2015)){
+    irr <- irrigation %>% filter(irryear == irr_y)
+    ag <- all_years %>% filter(year == ag_y)
+    combined <- base::merge(irr, ag, by="NAME", all.x = TRUE)
+    combined$irrigation_efficiency <- combined$ag_ET_mm_year*100/combined$mm.year
+    combo <- rbind(combo, combined)
+  }
+}
+combo <- filter(combo, n > 50000)
+```
+
+
 ## Do some plotting!
 
 ### Read in county shapefile and merge dfs
@@ -201,22 +240,25 @@ counties_irrigation <- base::merge(counties, efficiency_df, by = "NAME")
 
 
 ### Plot 1: irrigation use and agricultural water consumption
-```{r, eval = FALSE}
-ggplot() + 
+```{r, eval = TRUE}
+plotted_datasets <- ggplot() + 
   geom_sf(data = counties_irrigation, aes(fill = mm.year/10), color=alpha("red",0)) + 
   scale_fill_gradient2(name="Irrigation (cm/year)", low = "red", mid = "white", high = "deepskyblue4") + 
   # geom_sf(data = counties_irrigation, fill=alpha("red",0), color=alpha("grey64")) + 
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   new_scale_fill() +
   geom_raster(data = data[sample(nrow(data), size = nrow(data), replace = FALSE),], aes(x=x, y=y, fill=ag_ET_year/10), alpha=0.75) +
-  scale_fill_gradientn(name="Agricultural water consumption (cm/year)", colours = c("darkgoldenrod2", "khaki1", "lightgreen",  "deepskyblue","mediumblue", "navyblue", "midnightblue", "black"), limits = c(-39.1, 234.6)) +
+  scale_fill_gradientn(name="Agricultural ET (cm/year)", colours = c("darkgoldenrod2", "khaki1", "lightgreen",  "deepskyblue","mediumblue", "navyblue", "midnightblue", "black"), limits = c(-39.1, 234.6), breaks = seq(0, 200, by = 100)) +
   theme_void() + 
+  annotation_scale() + 
   xlim(c(minlong, maxlong)) + 
   ylim(c(minlat, maxlat)) + 
   theme(legend.position = c(.8, .82), 
         legend.direction = "horizontal", 
-        legend.title = element_blank(), 
+        legend.title = element_blank(),
         legend.margin = margin(18))
+
+plotted_datasets
 ```
 
 ### Plot 2: irrigation use and agricultural water consumption in the central valley
@@ -225,18 +267,60 @@ ggplot() +
 cv_data <- counties_irrigation
 cv_data <- filter(counties_irrigation, n > 50000)
 
-ggplot() + 
+plotted_eff <- ggplot() + 
   geom_sf(data = counties, fill = "grey", color=alpha("white",1), size = .2) + 
   geom_sf(data = cv_data, aes(fill = irrigation_efficiency), color=alpha("black",.2), size = .2) + 
-  geom_text(data = cv_data, aes(x = lon, y = lat, label = round(irrigation_efficiency, 0)), size = 2) + 
-  scale_fill_gradient2(name = "Irrigation efficiency (%)", low = "red", mid = "white", high = "#70AD47", limits = c(0, max(cv_data$irrigation_efficiency))) + 
+  geom_text(data = cv_data, aes(x = lon, y = lat, label = round(irrigation_efficiency, 0)), size = 3) + 
+  scale_fill_gradient2(name = "Irrigation efficiency (%)", low = "red", mid = "white", high = "#70AD47", limits = c(0, 100)) + # alternatve top limit: max(cv_data$irrigation_efficiency)
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   xlim(c(minlong, maxlong)) + 
   ylim(c(minlat, maxlat)) + 
   theme_void() + 
-  theme(legend.position = c(.87, .84)) 
+  theme(legend.position = c(.805, .85), 
+        legend.direction = "horizontal", 
+        legend.title=element_text(size=10)) + 
+  guides(fill = guide_colourbar(title.position="top", title.hjust = 0.5))#, override.aes = list(size = 0.5))) 
+
+plotted_eff
 ```
 
+```{r}
+theme_set(theme_pubr())
+
+figure <- ggarrange(plotted_datasets, plotted_eff, 
+                    labels = c("A", "B"),
+                    ncol = 2, nrow = 1)
+figure
+
+ggsave(here(experiment_path, "Figure_4.pdf"), 
+       width = 17.8,
+       height = 12.1,
+       units = "cm")
+```
+
+
+# Look at uncertainty based on what you get with combining different years
+```{r}
+cv_data$none <- ""
+ggplot(combo, aes(x = reorder(NAME, -lat))) + 
+  geom_point(data = combo, aes(y = irrigation_efficiency, shape = as.factor(year.y), color = as.factor(irryear)), alpha = .7, size = 2) + 
+  geom_point(data = cv_data, aes(y = irrigation_efficiency, fill = none), color = "red", size = 3, shape = "cross") + 
+  # geom_linerange(data = cv_data, aes(ymin = irrigation_efficiency_min, ymax = irrigation_efficiency_max, fill = none), color = "red") + 
+  theme_bw() + 
+  theme(legend.position = c(.3, .75), 
+        axis.text.x = element_text(angle = 30, hjust=1), 
+        legend.direction = "horizontal") + 
+  xlab("County") +
+  ylab("Irrigation efficiency (%)") + 
+  guides(shape=guide_legend(title="Agricultural ET year"), 
+         color=guide_legend(title="Irrigation year"), 
+         fill=guide_legend(title="Average over all years"))
+
+ggsave(here(experiment_path, "Figure_S8.pdf"), 
+       width = 17.8,
+       height = 11.1,
+       units = "cm")
+```
 
 # Compare predictions to what the data returned
 ```{r}
@@ -244,7 +328,7 @@ efficiency_calc <- function(flood, drip){
   sprinkler = 1-flood-drip
   
   # conveyance efficiency
-  CE = .90 # theoretically depends on type of conveyance technology
+  CE = .85 # theoretically depends on type of conveyance technology
   
   # distribution/management efficiency
   DE = .95 
@@ -265,29 +349,20 @@ counties_irrigation %>%
   ggplot() + 
   geom_smooth(aes(x = theoretical_efficiency, y = irrigation_efficiency), method = lm) + 
    geom_linerange(aes(x = theoretical_efficiency, ymin = irrigation_efficiency_min, ymax = irrigation_efficiency_max)) + 
-  geom_abline(intercept=0,slope=1, color="grey") + 
+  geom_abline(intercept=0,slope=1, color="red") + 
   geom_point(aes(x = theoretical_efficiency, y = irrigation_efficiency, color=lat), size = 2) +
   scale_color_distiller(palette="RdYlBu", direction=1, name = "Latitude") + 
-  theme_dark() + 
+  theme_bw() + 
+  coord_fixed() + 
   xlab("Theoretical irrigation efficiency (%)") + 
-  ylab("Empirical irrigation efficiency (%)") 
-```
+  ylab("Empirical irrigation efficiency (%)") +
+  xlim(c(min(counties_irrigation$theoretical_efficiency, counties_irrigation$irrigation_efficiency), max(counties_irrigation$theoretical_efficiency, counties_irrigation$irrigation_efficiency))) +
+  ylim(c(min(counties_irrigation$theoretical_efficiency, counties_irrigation$irrigation_efficiency), max(counties_irrigation$theoretical_efficiency, counties_irrigation$irrigation_efficiency)))
 
-```{r, eval = FALSE}
-summary(lm(data = counties_irrigation, irrigation_efficiency~theoretical_efficiency))
-summary(lm(data = counties_irrigation, irrigation_efficiency~theoretical_efficiency+lat))
-summary(lm(data = counties_irrigation, irrigation_efficiency~flood+drip+PET+sprinkler-1))
-summary(lm(data = counties_irrigation, irrigation_efficiency~flood+drip+ET_pred+sprinkler-1))
-summary(lm(data = counties_irrigation, irrigation_efficiency~flood+drip+PET+ET_pred+sprinkler-1))
-summary(lm(data = counties_irrigation, irrigation_efficiency~flood+drip+sprinkler-1))
-summary(lm(data = counties_irrigation, irrigation_efficiency~(flood+drip+sprinkler)*ET_pred-1))
-```
-
-
-```{r}
-# average drip irrigated by county
-mean(filter(counties_irrigation, n > 50000)$drip, na.rm = TRUE)
-mean(filter(counties_irrigation, n > 50000)$flood, na.rm = TRUE)
+ggsave(here(experiment_path, "Figure_S7.pdf"), 
+       width = 11.4,
+       height = 10,
+       units = "cm")
 ```
 
 ## Statsitics: overall efficiency + CIs
@@ -311,6 +386,6 @@ df_from_felm <- function(input_lm){
 
 total_eff_df <- df_from_felm(total_eff)
 
-print("total_eff_df")
-print(total_eff_df)
+write("Average irrigation efficiency",file=report,append=TRUE)
+fwrite(total_eff_df,file=report,append=TRUE)
 ```

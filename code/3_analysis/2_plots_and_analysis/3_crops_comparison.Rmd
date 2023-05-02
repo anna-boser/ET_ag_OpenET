@@ -25,9 +25,15 @@ source(here("helper_functions.R"))
 
 ## Read in the data
 ```{r}
-experiment_name <- "fallow_3-9_gb"
+# experiment_name <- "fallow0.05,2_4-18_gb"
+experiment_name <- "fallow0,2_4-23_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 data <- fread(file = here(experiment_path, "agriculture_yearly.csv"))
+test <- fread(here(test_data_path, paste0("fallow0,2_test.csv"))) # the pixels not used in training or validation 
+# test <- fread(here(test_data_path, paste0("fallow0.05,2_test.csv"))) # the pixels not used in training or validation 
+
+report <- here(experiment_path, "3_report.txt")
+if (file.exists(report)) {file.remove(report)} # start fresh every time you render
 ```
 
 # clean data
@@ -39,7 +45,6 @@ data <- data[cropnames != "Urban - residential, commercial, and industrial, unse
 data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow", data$cropnames) # rename unclassified fallow to just fallow
 
 # only keep fallow pixels that are in the test set
-test <- fread(test_data_loc)
 list <- unique(paste(test$x, test$y, test$year))
 nrow(data)
 data <- data %>% filter(!(cropnames == "Fallow" & !(paste(x, y, year) %in% list)))
@@ -71,35 +76,41 @@ data <- year_control(data)
 ```{r}
 #percent of total ET that is ag water consumption
 total_ET <- mean(filter(data, cropnames != "Fallow")$ET)
-ag_ET_mean <- felm(ag_ET~1 | 0 | 0 | cluster+year, filter(data, cropnames != "Fallow"))
+ag_ET_mean <- felm(ag_ET~1 | 0 | 0 | cluster, filter(data, cropnames != "Fallow"))
+summary(ag_ET_mean)
 
-print_CI("avg ag ET:", ag_ET_mean$coefficients[1], ag_ET_mean$cse)
-print_CI("percent ag ET:", ag_ET_mean$coefficients[1]/total_ET, ag_ET_mean$cse/total_ET)
+line <- print_CI("avg ag ET:", ag_ET_mean$coefficients[1], ag_ET_mean$cse)
+write(line,file=report,append=TRUE)
 
-# check if the variation of fallow ET across space is significant
-summary(felm(ET_pred~x*y | 0 | 0 | cluster+year, filter(data, cropnames == "Fallow")))
+line <- print_CI("percent ag ET:", (ag_ET_mean$coefficients[1]/total_ET)*100, (ag_ET_mean$cse/total_ET)*100)
+write(line,file=report,append=TRUE)
+
+# check if the variation of naturally-occurring ET across space is significant
+summary(felm(ET_pred~x*y | 0  | 0 | cluster, filter(data, cropnames == "Fallow")))
 
 # variation within crop types
-sds <- data %>% group_by(cropnames) %>% summarize(sd = sd(ag_ET))
+sds <- data %>% group_by(cropnames) %>% summarize(sd = sd(ag_ET), 
+                                                  IQR = IQR(ag_ET))
 print(sds, n = nrow(sds))
-paste("active sds average:", mean(filter(sds, cropnames != "Fallow")$sd))
+line <- paste("active sds average (sd within crops):", mean(filter(sds, cropnames != "Fallow")$sd))
+write(line,file=report,append=TRUE)
 ```
 
 ##################
 # compare crops
 ```{r}
 # get confidence intervals using clustered standard errors
-ET_c <- felm(ET~cropnames-1 | 0 | 0 | cluster+year, data) # -1 means no intercept
+ET_c <- felm(ET~cropnames-1 | 0  | 0 | cluster, data) # -1 means no intercept
 # ET_c %>% summary()
 ET_df <- df_from_felm(ET_c)
 rm(ET_c)
 
-ag_ET_c <- felm(ag_ET~cropnames-1 | 0 | 0 | cluster+year, data)
+ag_ET_c <- felm(ag_ET~cropnames-1 | 0  | 0 | cluster, data)
 # ag_ET_c %>% summary()
 ag_ET_df <- df_from_felm(ag_ET_c)
 rm(ag_ET_c)
 
-ET_pred_c <- felm(ET_pred~cropnames-1 | 0 | 0 | cluster+year, data)
+ET_pred_c <- felm(ET_pred~cropnames-1 | 0  | 0 | cluster, data)
 # ET_pred_c %>% summary()
 ET_pred_df <- df_from_felm(ET_pred_c)
 rm(ET_pred_c)
@@ -123,36 +134,79 @@ California’s irrigated pasturelands—including valley, foothill, and mountain
 
 ```{r}
 print(bardata %>% filter(type == "ag_ET"))
-print_CI("Deciduous fruits and nuts", mean = filter(bardata, type == "ag_ET")$ET[2], se = filter(bardata, type == "ag_ET")$se[2])
-print_CI("Grain and hay crops", mean = filter(bardata, type == "ag_ET")$ET[5], se = filter(bardata, type == "ag_ET")$se[5])
+line <- print_CI("Deciduous fruits and nuts ag ET", mean = filter(bardata, type == "ag_ET")$ET[2], se = filter(bardata, type == "ag_ET")$se[2])
+write(line,file=report,append=TRUE)
+line <- print_CI("Grain and hay crops ag ET", mean = filter(bardata, type == "ag_ET")$ET[5], se = filter(bardata, type == "ag_ET")$se[5])
+write(line,file=report,append=TRUE)
 ```
 ```{r}
-ggplot(filter(bardata, type == "ag_ET", cropnames != "Young Perennial"), aes(x = reorder(cropnames, ET))) + 
-  geom_linerange(data = filter(bardata, type == "ag_ET", cropnames != "Young Perennial"), aes(ymax = min, ymin = max), color = "seagreen") + 
-  geom_boxplot(data=filter(data, cropnames != "Young Perennial"), aes(y=ag_ET), outlier.size = .3, outlier.alpha = .005, color = "grey30") + 
+boxplot <- filter(data, cropnames != "Young Perennial") %>%
+  group_by(cropnames) %>%
+  summarise(ET = 1,
+            percentile_05 = quantile(ag_ET, .05), 
+            percentile_25 = quantile(ag_ET, .25),
+            percentile_50 = quantile(ag_ET, .5), 
+            percentile_75 = quantile(ag_ET, .75), 
+            percentile_95 = quantile(ag_ET, .95))
+```
+
+
+```{r}
+
+filter(bardata, type == "ag_ET", cropnames != "Young Perennial") %>% 
+  ggplot(aes(x = reorder(cropnames, ET))) + 
+  geom_linerange(data=filter(bardata, type == "ag_ET", cropnames != "Young Perennial"), aes(ymax = min, ymin = max), color = "seagreen") + 
+  geom_boxplot(data=boxplot, aes(lower = percentile_25, upper = percentile_75, middle = percentile_50, ymin = percentile_05, ymax = percentile_95), width=.7, color = "grey50", stat="identity") + 
   geom_col(data = filter(bardata, type != "ET", cropnames != "Young Perennial"), aes(y = ET, fill = type), alpha = .6) +
-  scale_fill_manual(values=c(ag_ET="seagreen", ET_pred="goldenrod4"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Simulated fallow ET")) + 
-  geom_col(data = filter(bardata, type == "ET", cropnames != "Young Perennial"), aes(y = ET, color = type), size=.5, alpha = 0) +
-  scale_color_manual(values=c("navyblue"), labels = c("Observed ET")) + 
-  geom_linerange(data = filter(bardata, type == "ET", cropnames != "Young Perennial"), aes(ymax = min, ymin = max), size=1.1, color = "navyblue") + 
-  geom_linerange(data = filter(bardata, type == "ag_ET", cropnames != "Young Perennial"), aes(ymax = min, ymin = max), size=1.1, color = "seagreen") + 
+  scale_fill_manual(values=c(ag_ET="seagreen", ET_pred="goldenrod4"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Naturally-occurring ET")) + 
+  geom_col(data = filter(bardata, type == "ET", cropnames != "Young Perennial"), aes(y = ET, color = type), size=.3, alpha = 0) +
+  scale_color_manual(values=c("black"), labels = c("Observed ET")) + 
+  # geom_linerange(data = filter(bardata, type == "ET", cropnames != "Young Perennial"), aes(ymax = min, ymin = max), size=1.1, color = "navyblue") + 
+  geom_linerange(aes(ymax = min, ymin = max), size=1.1, color = "seagreen") + 
   ylab("cm/year") + 
   theme_classic() + 
   labs(fill='') + 
-  ylim(c(-35, 165)) + 
-  theme(axis.text.x = element_text(angle = 30, hjust=1), 
+  # ylim(c(-35, 165)) + 
+  theme(axis.text.x = element_text(angle = 30, hjust=1, size=11), 
         axis.title.x=element_blank(), 
         axis.ticks.x=element_blank(), 
+        axis.text.y = element_text(size=11), 
+        axis.title.y = element_text(size=11), 
         legend.position = "top", 
         legend.direction="horizontal", 
-        legend.title=element_blank())
+        legend.title=element_blank(), 
+        legend.text=element_text(size=11))
 
-fwrite(bardata, here(experiment_path, "bardata.csv"))
+ggsave(here(experiment_path, "Figure_2.pdf"), 
+       width = 17.8,
+       height = 11.1,
+       units = "cm")
+```
+
+```{r}
+# Make a dataset to save and publish
+crop_group <- bardata %>% filter(type == "ag_ET", cropnames != "Young Perennial")
+crop_group$type <- NULL
+crop_group$se <- NULL
+crop_group$agricultural_ET <- crop_group$ET
+crop_group$ET <- NULL
+crop_group$agricultural_ET_min <- crop_group$min
+crop_group$min <- NULL
+crop_group$agricultural_ET_max <- crop_group$max
+crop_group$max <- NULL
+
+boxplot$ET <- NULL
+
+crop_group <- merge(crop_group, boxplot, by = "cropnames")
+crop_group$crop_group <- crop_group$cropnames
+crop_group$cropnames <- NULL
+
+fwrite(crop_group, here(experiment_path, "crop_group_table.csv"))
 ```
 
 
 # scrap plots
-```{r, eval = FALSE}
+```{r, eval = FALSE, render=FALSE}
 # The original bardata without boxplot
 
 ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(cropnames, ET))) +
@@ -193,11 +247,11 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(cropnames, ET))) +
 
 ```{r}
 # are ET_pred_c different from each other? 
-felm(ET_pred~cropnames | year | 0 | cluster, data) %>% summary
+felm(ET_pred~cropnames | 0  | 0 | cluster, data) %>% summary
 # how much of the variation is explained by crop type? 
-felm(ag_ET~cropnames | year | 0 | cluster, data) %>% summary
+felm(ag_ET~cropnames | 0  | 0 | cluster, data) %>% summary
 # what about when you control for climate
-felm(ag_ET~cropnames+PET+Elevation+Aspect+Slope+TWI+Soil | year | 0 | cluster, data) %>% summary
+felm(ag_ET~cropnames+PET+Elevation+Aspect+Slope+TWI+Soil | 0  | 0 | cluster, data) %>% summary
 ```
 
 Fallow ET_pred is significantly lower and Rice is significantly higher. 
@@ -208,25 +262,27 @@ Fallow ET_pred is significantly lower and Rice is significantly higher.
 data <- filter(data,  !(subcropnames %in% c("Miscellaneous deciduous", "Miscellaneous field", "Miscellaneous grain and hay", "Greenhouse", "Miscellaneous grasses", "Miscellaneous subtropical fruit", "Miscellaneous truck")))
 
 # variation within crop types
-sds <- data %>% group_by(subcropnames) %>% summarize(sd = sd(ag_ET))
+sds <- data %>% group_by(subcropnames) %>% summarize(sd = sd(ag_ET), 
+                                                  IQR = IQR(ag_ET))
 print(sds, n = nrow(sds))
-paste("active sds average:", mean(filter(sds, subcropnames != "Fallow")$sd))
+line <- paste("active sds average (sd within subcrops):", mean(filter(sds, subcropnames != "Fallow")$sd))
+write(line,file=report,append=TRUE)
 ```
 
 
 ```{r}
 # get confidence intervals using clustered standard errors
-ET_c <- felm(ET~subcropnames-1 | 0 | 0 | cluster+year, data) # -1 means no intercept
+ET_c <- felm(ET~subcropnames-1 | 0  | 0 | cluster, data) # -1 means no intercept
 # ET_c %>% summary()
 ET_df <- df_from_felm(ET_c, 13, "subcropnames")
 rm(ET_c)
 
-ag_ET_c <- felm(ag_ET~subcropnames-1 | 0 | 0 | cluster+year, data)
+ag_ET_c <- felm(ag_ET~subcropnames-1 | 0  | 0 | cluster, data)
 # ag_ET_c %>% summary()
 ag_ET_df <- df_from_felm(ag_ET_c, 13, "subcropnames")
 rm(ag_ET_c)
 
-ET_pred_c <- felm(ET_pred~subcropnames-1 | 0 | 0 | cluster+year, data)
+ET_pred_c <- felm(ET_pred~subcropnames-1 | 0  | 0 | cluster, data)
 # ET_pred_c %>% summary()
 ET_pred_df <- df_from_felm(ET_pred_c, 13, "subcropnames")
 rm(ET_pred_c)
@@ -240,13 +296,14 @@ bardata$type <- as.factor(bardata$type)
 bardata$type <- relevel(bardata$type, 'ET_pred')
 
 # sd across crop types
-print("sd across crop types:")
-sd(filter(bardata, type == "ag_ET")$ET)
+line <- paste("sd across crop types:", sd(filter(bardata, type == "ag_ET")$ET))
+write(line,file=report,append=TRUE)
 ```
 
 ```{r}
 print(bardata %>% filter(type == "ag_ET"))
-print_CI("Almonds", mean = filter(bardata, type == "ag_ET")$ET[2], se = filter(bardata, type == "ag_ET")$se[2])
+line <- print_CI("Almonds", mean = filter(bardata, type == "ag_ET")$ET[2], se = filter(bardata, type == "ag_ET")$se[2])
+write(line,file=report,append=TRUE)
 ```
 
 ### Plot
@@ -254,29 +311,65 @@ print_CI("Almonds", mean = filter(bardata, type == "ag_ET")$ET[2], se = filter(b
 California’s irrigated pasturelands—including valley, foothill, and mountain meadow pastures— account for nearly 500,000 acres across the state, and ranks third among agricultural water users. https://rangelands.ucdavis.edu/ipep/
 
 ```{r}
+boxplot <- filter(data, subcropnames != "Young Perennial") %>%
+  group_by(subcropnames) %>%
+  summarise(ET = 1,
+            percentile_05 = quantile(ag_ET, .05), 
+            percentile_25 = quantile(ag_ET, .25),
+            percentile_50 = quantile(ag_ET, .5), 
+            percentile_75 = quantile(ag_ET, .75), 
+            percentile_95 = quantile(ag_ET, .95))
+
 ggplot(filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(x = reorder(subcropnames, ET))) + 
   geom_linerange(data = filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), color = "seagreen") + 
-  geom_boxplot(data=filter(data, subcropnames != "Young Perennial"), aes(y=ag_ET), outlier.size = .3, outlier.alpha = .005, color = "grey30") + 
+  geom_boxplot(data=boxplot, aes(lower = percentile_25, upper = percentile_75, middle = percentile_50, ymin = percentile_05, ymax = percentile_95), color = "grey50", stat="identity") + 
   geom_col(data = filter(bardata, type != "ET", subcropnames != "Young Perennial"), aes(y = ET, fill = type), alpha = .6) +
-  scale_fill_manual(values=c(ag_ET="seagreen", ET_pred="goldenrod4"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Simulated fallow ET")) + 
-  geom_col(data = filter(bardata, type == "ET", subcropnames != "Young Perennial"), aes(y = ET, color = type), alpha = 0) +
-  scale_color_manual(values=c("navyblue"), labels = c("Observed ET")) + 
-  geom_linerange(data = filter(bardata, type == "ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), size = 1, color = "navyblue") + 
+  scale_fill_manual(values=c(ag_ET="seagreen", ET_pred="goldenrod4"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Naturally-occurring ET")) + 
+  geom_col(data = filter(bardata, type == "ET", subcropnames != "Young Perennial"), aes(y = ET, color = type), alpha = 0, size = 0.3) +
+  scale_color_manual(values=c("black"), labels = c("Observed ET")) + 
+  # geom_linerange(data = filter(bardata, type == "ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), size = 1, color = "navyblue") + 
   geom_linerange(data = filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), size = 1, color = "seagreen") + 
   ylab("cm/year") + 
   theme_classic() + 
   labs(fill='') + 
-  ylim(c(-45, 175)) + 
+  # ylim(c(-45, 175)) + 
   theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.5), 
         axis.title.x=element_blank(), 
         # axis.ticks.x=element_blank(), 
         legend.position = "top", 
         legend.direction="horizontal", 
         legend.title=element_blank())
+
+ggsave(here(experiment_path, "Figure_S5.pdf"), 
+       width = 17.8,
+       height = 11.1,
+       units = "cm")
 ```
 
+```{r}
+# Make a dataset to save and publish
+crop_type <- bardata %>% filter(type == "ag_ET", subcropnames != "Young Perennial")
+crop_type$type <- NULL
+crop_type$se <- NULL
+crop_type$agricultural_ET <- crop_type$ET
+crop_type$ET <- NULL
+crop_type$agricultural_ET_min <- crop_type$min
+crop_type$min <- NULL
+crop_type$agricultural_ET_max <- crop_type$max
+crop_type$max <- NULL
+
+boxplot$ET <- NULL
+
+crop_type <- merge(crop_type, boxplot, by = "subcropnames")
+crop_type$crop_type <- crop_type$subcropnames
+crop_type$cropnames <- NULL
+
+fwrite(crop_type, here(experiment_path, "crop_type_table.csv"))
+```
+
+
 # scrap plots
-```{r, eval = FALSE}
+```{r, eval = FALSE, render=FALSE}
 ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(subcropnames, ET))) + 
   geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "seagreen") + 
   geom_col(data = filter(bardata, type != "ET"), aes(y = ET, fill = type), alpha = .6) +
@@ -333,18 +426,20 @@ ggplot(filter(bardata, type == "ET"), aes(x = reorder(subcropnames, ET))) +
 
 ```{r}
 # are ET_pred_c different from each other? 
-felm(ET_pred~subcropnames | year | 0 | cluster, data) %>% summary
+felm(ET_pred~subcropnames | 0  | 0 | cluster, data) %>% summary
 # how much of the variation is explained by crop type? 
-felm(ag_ET~subcropnames | year | 0 | cluster, data) %>% summary
+felm(ag_ET~subcropnames | 0  | 0 | cluster, data) %>% summary
 # what about when you control for climate
-felm(ag_ET~subcropnames+PET+Elevation+Aspect+Slope+TWI+Soil | year | 0 | cluster, data) %>% summary
+felm(ag_ET~subcropnames+PET+Elevation+Aspect+Slope+TWI+Soil | 0  | 0 | cluster, data) %>% summary
 
 # what percent of within-crop variation do we account for with climate? 
 mean_by_crop <- data %>% group_by(subcropnames) %>% summarize(crop_mean = mean(ag_ET))
 data <- merge(data, mean_by_crop, by = c("subcropnames"))
 data$within_crop_var <- data$ag_ET - data$crop_mean
 
-felm(within_crop_var~PET+Elevation+Aspect+Slope+TWI+Soil | year | 0 | cluster, data) %>% summary
+mod <- felm(within_crop_var~PET+Elevation+Aspect+Slope+TWI+Soil | 0  | 0 | cluster, data) %>% summary
+line <- paste("percent within crop variation accounted for by PET+Elevation+Aspect+Slope+TWI+Soil:", mod$r2)
+write(line,file=report,append=TRUE)
 ```
 
 

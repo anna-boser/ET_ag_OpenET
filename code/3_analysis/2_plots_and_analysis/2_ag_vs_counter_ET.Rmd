@@ -17,6 +17,7 @@ library(sf)
 library(stringr)
 library(ggspatial)
 library(gstat) # for the variogram
+library(egg)
 
 source(here("file_paths.R"))
 source(here("helper_functions.R"))
@@ -27,8 +28,9 @@ source(here("helper_functions.R"))
 
 ## Read in the data
 ```{r}
-experiment_name <- "fallow_3-9_gb"
+experiment_name <- "fallow0.05,2_4-18_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+test <- fread(here(test_data_path, paste0("fallow0.05,2_test.csv"))) # the pixels not used in training or validation
 ```
 
 ```{r}
@@ -41,7 +43,7 @@ data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "
 ```
 
 ## variogram
-```{r, eval = FALSE}
+```{r, eval = TRUE}
 # plot a variogram 
 sample <- data[sample(nrow(data), size = 100000, replace = FALSE),] #subset data to calculate variogram
 sample$x <- (sample$x - min(sample$x))*89  # turn x into km 
@@ -64,13 +66,17 @@ ggplot(vario_ET2) +
         legend.title=element_blank()) + 
   xlab("Distance (km)") + 
   ylab("Gamma")
+
+ggsave(here(experiment_path, "Figure_S12.pdf"), 
+       width = 17.8,
+       height = 11.1,
+       units = "cm")
   
 ```
 
 ## histograms 
 ```{r, eval = FALSE}
 # only keep fallow pixels that are in the test set
-test <- fread(test_data_loc)
 list <- unique(paste(test$x, test$y, test$year))
 nrow(data)
 data <- data %>% filter(!(cropnames == "Fallow" & !(paste(x, y, year) %in% list)))
@@ -133,33 +139,49 @@ scalar = 1.2 # mm/month to cm/year
 # full_data <- data
 # data <- full_data[sample(nrow(full_data), size = 100000, replace = FALSE),] # subset for fast testing
 
-new.labs <- c("Observed ET", "Simulated fallow ET", "Agricultural ET")
+new.labs <- c("Observed ET", "Naturally-occurring ET", "Agricultural ET")
 names(new.labs) <- c("ET", "ET_pred", "ag_ET")
 
 ggplot() + 
   geom_sf(data = counties, fill = "grey", color=alpha("white",1), size = .2) + 
   geom_raster(data = data, aes(x=x, y=y, fill=ET*scalar)) +
   facet_grid(cols=vars(type), labeller = labeller(type = new.labs)) +
-  scale_fill_gradientn(name="ET (cm/year)", colours = c("darkgoldenrod2", "khaki1", "lightgreen",  "deepskyblue","mediumblue", "navyblue", "midnightblue", "black"), limits = c(-39.1, 234.6)) +
+  scale_fill_gradientn(name="ET (cm/year)", colours = c("darkgoldenrod2", "khaki1", "lightgreen",  "deepskyblue","mediumblue", "navyblue", "midnightblue", "black"), limits = c(-39.1, 234.6), breaks = seq(0, 200, by = 100)) +
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   xlim(c(minlong, maxlong)) + 
   ylim(c(minlat, maxlat)) + 
-  annotation_scale() + 
+  annotation_scale(data = tibble::tibble(type = as.factor("ET")), text_cex=.6, height=unit(0.2, "cm")) + 
   theme_classic() +
-  theme(legend.position = c(0.93, 0.74),
+  theme(legend.position = c(0.934, 0.867), 
+        legend.direction = "horizontal",
+        legend.title = element_text(size = 8), 
+        legend.text = element_text(size = 7), 
         axis.title.y=element_blank(),
         axis.text.y=element_blank(),
         axis.ticks.y=element_blank(), 
         axis.title.x=element_blank(),
         axis.text.x=element_blank(),
-        axis.ticks.x=element_blank()) 
+        axis.ticks.x=element_blank(), 
+        strip.text.x = element_text(size = 8), 
+        legend.key.width = unit(dev.size()[1] / 40, "inches")) + 
+  guides(fill = guide_colourbar(title.position="top", title.hjust = 0.5, override.aes = list(size = 0.5))) 
+
+ggsave(here(experiment_path, "Figure_1.pdf"), 
+       width = 17.8,
+       height = 8.9,
+       units = "cm")
 ```
 
 ```{r}
 # extra stuff to photoshop later
 ggplot() + 
-  geom_sf(data = counties, fill = "grey", color=alpha("white",1), size = .2) + 
-  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
+  geom_sf(data = counties, fill = "grey", color=alpha("white",0), size = .2) + 
+  geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .5) + 
   theme_void() +
-  geom_rect(aes(xmin=minlong-.2, xmax=maxlong+.2, ymin=minlat-.2, ymax=maxlat+.2), color="black", fill="transparent")
+  geom_rect(aes(xmin=minlong-.2, xmax=maxlong+.2, ymin=minlat-.2, ymax=maxlat+.2), color="black", fill="transparent", size = .5)
+
+ggsave(here(experiment_path, "Figure_1_insert.pdf"), 
+       width = 2.75,
+       height = 2.75,
+       units = "cm")
 ```

@@ -80,7 +80,7 @@ print_CI <- function(varname, mean, se){
   upper <- (mean + 1.96*se) %>% round(1)
   mean <- mean %>% round(1)
   lower <- (mean - 1.96*se) %>% round(1)
-  paste0(varname, ": ", mean, " (", lower, ", ", upper, " 95% CI)")
+  paste0(varname, ": ", mean, " (", lower, "-", upper, " 95% CI)")
 }
 
 # control for year

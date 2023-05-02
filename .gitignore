@@ -10,3 +10,4 @@ data/*
 *.sh
 code/2_counterfactual/__pycache__/*
 code/3_analysis/2_plots_and_analysis/*.html
+figs_and_data/*
