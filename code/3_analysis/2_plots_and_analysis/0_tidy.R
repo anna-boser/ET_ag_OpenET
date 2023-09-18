@@ -10,9 +10,9 @@ library(stringr)
 
 source(here("file_paths.R"))
 
-
-experiment_name <- "fallow_3-9_gb"
+experiment_name <- "fallow0.05,2_4-18_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+
 months_ts <- TRUE
 years_ts <- TRUE
 
@@ -57,13 +57,24 @@ fwrite(data, here(experiment_path, "agriculture_time_constant.csv"))
 # averaged over months only
 data <- fread(here(experiment_path, "agriculture_tidy.csv"))
 if (months_ts == TRUE){
-  # Average over months/years
-  data <- data %>% group_by(x, y, year, Elevation,Slope,Aspect,Soil,TWI,NAME,coverage_fraction) %>% summarize(ET = mean(ET, na.rm=TRUE), 
+  # Average over months to get yearly numbers
+  data <- data %>% group_by(x, y, year, cropnames, subcropnames, Elevation,Slope,Aspect,Soil,TWI,NAME,coverage_fraction) %>% summarize(ET = mean(ET, na.rm=TRUE), 
                                                   ET_pred = mean(ET_pred, na.rm=TRUE), 
                                                   PET = mean(PET, na.rm=TRUE),
                                                   ag_ET = ET-ET_pred)
 }
 fwrite(data, here(experiment_path, "agriculture_yearly.csv"), append=FALSE)
+
+# averaged over years only
+data <- fread(here(experiment_path, "agriculture_tidy.csv"))
+if (years_ts == TRUE){
+  # Average over years to get monthly numbers
+  data <- data %>% group_by(x, y, month, cropnames, subcropnames, Elevation,Slope,Aspect,Soil,TWI,NAME,coverage_fraction) %>% summarize(ET = mean(ET, na.rm=TRUE), 
+                                                  ET_pred = mean(ET_pred, na.rm=TRUE), 
+                                                  PET = mean(PET, na.rm=TRUE),
+                                                  ag_ET = ET-ET_pred)
+}
+fwrite(data, here(experiment_path, "agriculture_monthly.csv"), append=FALSE)
 
 ########################################################################
 # average by croptype and subcroptype
@@ -78,10 +89,12 @@ data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "
 data <- filter(data, coverage_fraction>.5)
 
 # only keep fallow pixels that are in the test set
-test <- fread(test_data_loc)
+# do this even when using fveg just to have a good comparison
+test <- fread(here(test_data_path, paste0("fallow0.05,2_test.csv")))
 list <- unique(paste(test$x, test$y, test$year))
 data <- data %>% filter(!(paste(data$x, data$y, data$year) %in% list))
-rm(test)
+rm(test)  
+
 
 data$subcropnames <- ifelse(data$subcropnames == "", data$cropnames, data$subcropnames)
 
@@ -117,7 +130,6 @@ c_df <- data %>%
             latitude = mean(y))
 
 sc_df <- data %>% 
-  filter(subcropnames %in% CS$cropnames, month) %>%
   group_by(cropnames = subcropnames, COUNTY_NAME = NAME, month) %>%
   summarize(ag_ET = mean(ag_ET), 
             ET = mean(ET), 
