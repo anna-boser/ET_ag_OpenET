@@ -1,0 +1,172 @@
+---
+title: "crops comparison"
+author: "Anna Boser"
+date: '2022-05-05'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sp)
+library(here)
+library(stringr)
+library(sf)
+library(data.table)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(latex2exp)
+library(lfe)
+
+source(here("file_paths.R"))
+source(here("helper_functions.R"))
+```
+
+## Read in the data
+```{r}
+experiment_name <- "fallow0.05,2_4-18_gb"
+experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+data <- fread(file = here(experiment_path, "agriculture_tidy.csv"), nrows = 10000)
+# test <- fread(here(test_data_path, paste0("fallow0,2_test.csv"))) # the pixels not used in training or validation 
+test <- fread(here(test_data_path, paste0("fallow0.05,2_test.csv"))) # the pixels not used in training or validation 
+
+report <- here(experiment_path, "2.5_report.txt")
+if (file.exists(report)) {file.remove(report)} # start fresh every time you render
+```
+
+# clean data
+```{r}
+data <- filter(data, coverage_fraction>.5)
+
+data <- data[cropnames != "",] # only keep data that has crop info (get rid of years without dwr data)
+data <- data[cropnames != "Urban - residential, commercial, and industrial, unsegregated",] # remove urban
+data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow", data$cropnames) # rename unclassified fallow to just fallow
+
+# only keep fallow pixels that are in the test set
+list <- unique(paste(test$x, test$y, test$year))
+nrow(data)
+data <- data %>% filter(!(cropnames == "Fallow" & !(paste(x, y, year) %in% list)))
+nrow(data)
+rm(test)
+
+data$subcropnames <- ifelse(data$subcropnames == "", data$cropnames, data$subcropnames)
+
+data <- filter(data,  subcropnames != "Greenhouse")
+
+# combine potatoes and "potatoes or sweet potato"
+data$subcropnames <- ifelse(data$subcropnames %in% c("Potatoes", "Potato or Sweet potato"), "Potato or Sweet potato", data$subcropnames)
+```
+
+```{r}
+# create clusters based on location and year. Function creates clusters of size dist km. 
+data$cluster <- mapply(assign_cluster, data$x, data$y, 75)
+
+# scale to cm/year instead of mm/month
+# scalar = 1.2 # turns mm/month to cm/year
+# data <- scale(data, scalar)
+
+# control for variation across years
+data <- year_control(data)
+```
+
+### Some numbers
+```{r}
+data$month <- as.numeric(data$month)
+
+gs_months <- 6:9
+
+data_gs_yearly <- filter(data, cropnames != "Fallow", month %in% gs_months) %>% 
+  group_by(x, y, year, cluster) %>% 
+  summarise(ET = mean(ET), 
+            ag_ET = mean(ag_ET), 
+            ET_pred = mean(ET_pred))
+
+#percent of total ET that is ag water consumption in months 5-10
+total_ET <- mean(data_gs_yearly$ET)
+ag_ET_mean <- felm(ag_ET~1 | 0 | 0 | cluster, data_gs_yearly)
+summary(ag_ET_mean)
+
+line <- print_CI(paste("avg ag ET months", paste(gs_months, collapse = ",")), ag_ET_mean$coefficients[1], ag_ET_mean$cse)
+print(line)
+write(line,file=report,append=TRUE)
+
+line <- print_CI(paste("percent ag ET months", paste(gs_months, collapse = ",")), (ag_ET_mean$coefficients[1]/total_ET)*100, (ag_ET_mean$cse/total_ET)*100)
+print(line)
+write(line,file=report,append=TRUE)
+```
+
+##################
+# compare months
+```{r}
+data$month <- as.factor(data$month)
+
+# get confidence intervals using clustered standard errors
+ET_c <- felm(ET~month-1 | 0  | 0 | cluster, data) # -1 means no intercept
+# ET_c %>% summary()
+ET_df <- df_from_felm(ET_c, name_length = 6, var="month")
+rm(ET_c)
+
+ag_ET_c <- felm(ag_ET~month-1 | 0  | 0 | cluster, data)
+# ag_ET_c %>% summary()
+ag_ET_df <- df_from_felm(ag_ET_c, name_length = 6, var="month")
+rm(ag_ET_c)
+
+ET_pred_c <- felm(ET_pred~month-1 | 0  | 0 | cluster, data)
+# ET_pred_c %>% summary()
+ET_pred_df <- df_from_felm(ET_pred_c, name_length = 6, var="month")
+rm(ET_pred_c)
+
+ET_df$type = "ET"
+ag_ET_df$type = "ag_ET"
+ET_pred_df$type = "ET_pred"
+
+bardata <- rbind(ET_df, ET_pred_df, ag_ET_df)
+bardata$type <- as.factor(bardata$type)
+bardata$type <- relevel(bardata$type, 'ET_pred')
+```
+
+### Plot
+
+```{r}
+bardata$month <- as.numeric(bardata$month)
+
+ggplot(bardata, aes(x = month)) +
+  geom_line(aes(y = ET, color = type, group = type)) +
+  geom_ribbon(aes(ymin = min, ymax = max, fill = type, group = type), alpha = 0.2) +
+  ylab("mm/month") +
+  xlab("Month") +
+  theme_bw() +
+  scale_x_continuous(breaks = c(1:12)) +
+  scale_color_manual(
+    values = c("ag_ET" = "seagreen", "ET_pred" = "goldenrod4", "ET" = "black"),
+    breaks = c("ag_ET", "ET_pred", "ET"),
+    labels = c("Agricultural ET", "Natural ET", "Total ET"),
+    name = ""
+  ) +
+  scale_fill_manual(
+    values = c("ag_ET" = "seagreen", "ET_pred" = "goldenrod4", "ET" = "black"),
+    breaks = c("ag_ET", "ET_pred", "ET"),
+    labels = c("Agricultural ET", "Natural ET", "Total ET"),
+    name = ""
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(size = 1.5)),
+    fill = guide_legend(override.aes = list(size = 0.5))
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1, size = 11),
+    axis.title.x = element_text(size = 11),
+    axis.text.y = element_text(size = 11),
+    axis.title.y = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11)
+  )
+
+ggsave(here(experiment_path, "Figure_1.5.pdf"), 
+       width = 17.8,
+       height = 11.1,
+       units = "cm")
+```
+
