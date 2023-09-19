@@ -28,7 +28,7 @@ source(here("helper_functions.R"))
 
 ## Read in the data
 ```{r}
-experiment_name <- "fallow0.05,2_4-18_gb"
+experiment_name <- "fveg_subset_6-7_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 test <- fread(here(test_data_path, paste0("fallow0.05,2_test.csv"))) # the pixels not used in training or validation
 ```

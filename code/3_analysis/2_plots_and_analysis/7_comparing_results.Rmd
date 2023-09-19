@@ -1,0 +1,71 @@
+---
+title: "Comparing results"
+author: "Anna Boser"
+date: "2023-06-14"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(here)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(rgdal)
+library(maptools)
+library(data.table)
+library(sf)
+library(stringr)
+library(ggspatial)
+library(gstat) # for the variogram
+library(egg)
+library(lfe)
+
+source(here("file_paths.R"))
+source(here("helper_functions.R"))
+```
+
+## Compare the result of two different runs
+
+```{r}
+experiment1 <- "fveg_subset_6-7_gb"
+experiment2 <- "fallow0.05,2_4-18_gb"
+
+process <- function(experiment_name){
+  experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+
+  data <- fread(file = here(experiment_path, "agriculture_yearly.csv"))
+  data <- data[cropnames != "Urban - residential, commercial, and industrial, unsegregated",] # remove urban
+  data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow", data$cropnames) # rename unclassified
+  
+  # only keep fallow pixels that are in the test set
+  test <- fread(here(test_data_path, paste0("fallow0.05,2_test.csv"))) # the pixels not used in training or validation
+  list <- unique(paste(test$x, test$y, test$year))
+  nrow(data)
+  data <- data %>% filter(!(cropnames == "Fallow" & !(paste(x, y, year) %in% list)))
+  nrow(data)
+  rm(test)
+  
+  # create clusters based on location and year. Function creates clusters of size dist km. 
+  data$cluster <- mapply(assign_cluster, data$x, data$y, 75)
+  
+  # scale to cm/year instead of mm/month
+  scalar = 1.2 # turns mm/month to cm/year
+  data <- scale(data, scalar)
+  
+  data$experiment <- experiment_name
+  
+  return(data)
+}
+
+data <- rbindlist(lapply(c(experiment1, experiment2), process))
+```
+
+```{r}
+# check if the variation of naturally-occurring ET across space is significant
+summary(felm(ag_ET~experiment | 0  | 0 | cluster, data))
+
+summary(felm(ET_pred~experiment | 0  | 0 | cluster, data))
+```
+
