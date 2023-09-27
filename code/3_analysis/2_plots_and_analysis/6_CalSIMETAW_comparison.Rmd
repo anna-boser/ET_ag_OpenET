@@ -58,7 +58,7 @@ counties <- c("Tehama", "Glenn", "Butte", "Colusa", "Sutter", "Yuba", "Yolo", "S
 
 CS <- filter(CS, COUNTY_NAME %in% counties)
 
-# get mm/day 
+# original values are in mm/month: https://data.ca.gov/dataset/cal-simetaw-unit-values/resource/10b6414f-c281-4a23-8204-711f867b5109
 CS$Date <- as.Date(CS$Date)
 CS$year <- year(CS$Date + 92) # add three months to get the water year
 CS$month <- month(CS$Date)
@@ -129,8 +129,11 @@ write(line,file=report,append=TRUE)
 bias <- mean(scatter_data$ETc_ET_pred - scatter_data$ET_ET_pred)
 se <- sd(scatter_data$ETc_ET_pred - scatter_data$ET_ET_pred)/sqrt(nrow(scatter_data))
 line <- print_CI("bias simetaw-ET_pred (monthly) vs ag ET (monthly)", bias, se)
+print(line)
 write(line,file=report,append=TRUE)
+
 line <- print_CI("bias as percent of theoretical", (bias/mean(scatter_data$ETc_ET_pred))*100, (se/mean(scatter_data$ETc_ET_pred))*100)
+print(line)
 write(line,file=report,append=TRUE)
 ```
 
@@ -144,8 +147,11 @@ write(line,file=report,append=TRUE)
 bias <- mean(scatter_data$ag_ET_need - scatter_data$ET_ET_pred)
 se <- sd(scatter_data$ag_ET_need - scatter_data$ET_ET_pred)/sqrt(nrow(scatter_data))
 line <- print_CI("bias simetaw-rain (monthly) vs ag ET (monthly)", bias, se)
+print(line)
 write(line,file=report,append=TRUE)
+
 line <- print_CI("bias as percent of theoretical", (bias/mean(scatter_data$ag_ET_need))*100, (se/mean(scatter_data$ag_ET_need))*100)
+print(line)
 write(line,file=report,append=TRUE)
 ```
 
