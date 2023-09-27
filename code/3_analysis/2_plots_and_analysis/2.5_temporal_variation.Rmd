@@ -26,7 +26,7 @@ source(here("helper_functions.R"))
 ```{r}
 experiment_name <- "fallow0.05,2_4-18_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
-data <- fread(file = here(experiment_path, "agriculture_tidy.csv"))
+data <- fread(file = here(experiment_path, "agriculture_tidy.csv")) #, nrows = 20000)
 # test <- fread(here(test_data_path, paste0("fallow0,2_test.csv"))) # the pixels not used in training or validation 
 test <- fread(here(test_data_path, paste0("fallow0.05,2_test.csv"))) # the pixels not used in training or validation 
 
@@ -170,3 +170,166 @@ ggsave(here(experiment_path, "Figure_1.5.pdf"),
        units = "cm")
 ```
 
+# Make same plot with facets by crop
+```{r}
+# do only for crops that are not YP or fallow. Remove YP because it's hard to interpret, and remove fallow because I have a seperate figure in the SI that shows this one for validation purposes. 
+cropnames <- unique(data$cropnames[!(data$cropnames %in% c("Young Perennial", "Fallow"))])
+
+# make the dataset with CIs
+make_df <- function(crop, column){
+  # filter to only keep a certain crop
+  data <- filter(data, data[[column]] == crop)
+  
+  # get confidence intervals using clustered standard errors
+  ET_c <- felm(ET~month-1 | 0  | 0 | cluster, data) # -1 means no intercept
+  # ET_c %>% summary()
+  ET_df <- df_from_felm(ET_c, name_length = 6, var="month")
+  rm(ET_c)
+  
+  ag_ET_c <- felm(ag_ET~month-1 | 0  | 0 | cluster, data)
+  # ag_ET_c %>% summary()
+  ag_ET_df <- df_from_felm(ag_ET_c, name_length = 6, var="month")
+  rm(ag_ET_c)
+  
+  ET_pred_c <- felm(ET_pred~month-1 | 0  | 0 | cluster, data)
+  # ET_pred_c %>% summary()
+  ET_pred_df <- df_from_felm(ET_pred_c, name_length = 6, var="month")
+  rm(ET_pred_c)
+  
+  ET_df$type = "ET"
+  ag_ET_df$type = "ag_ET"
+  ET_pred_df$type = "ET_pred"
+  
+  bardata <- rbind(ET_df, ET_pred_df, ag_ET_df)
+  bardata$type <- as.factor(bardata$type)
+  bardata$type <- relevel(bardata$type, 'ET_pred')
+  
+  bardata[[column]] <- crop
+  
+  return(bardata)
+}
+
+bardata <- rbindlist(lapply(cropnames, make_df, "cropnames"))
+
+# plot the dataset with the different facets by crop. 
+bardata$month <- as.numeric(bardata$month)
+
+ggplot(bardata, aes(x = month)) +
+  geom_line(aes(y = ET, color = type, group = type)) +
+  geom_ribbon(aes(ymin = min, ymax = max, fill = type, group = type), alpha = 0.2) +
+  ylab("mm/month") +
+  xlab("Month") +
+  theme_bw() +
+  scale_x_continuous(breaks = c(1:12)) +
+  scale_color_manual(
+    values = c("ag_ET" = "seagreen", "ET_pred" = "goldenrod4", "ET" = "black"),
+    breaks = c("ag_ET", "ET_pred", "ET"),
+    labels = c("Agricultural ET", "Natural ET", "Total ET"),
+    name = ""
+  ) +
+  scale_fill_manual(
+    values = c("ag_ET" = "seagreen", "ET_pred" = "goldenrod4", "ET" = "black"),
+    breaks = c("ag_ET", "ET_pred", "ET"),
+    labels = c("Agricultural ET", "Natural ET", "Total ET"),
+    name = ""
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(size = 1.5)),
+    fill = guide_legend(override.aes = list(size = 0.5))
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1, size = 11),
+    axis.title.x = element_text(size = 11),
+    axis.text.y = element_text(size = 11),
+    axis.title.y = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11)
+  ) + 
+  facet_wrap(vars(cropnames))
+
+ggsave(here(experiment_path, "Figure_1.5_crops.pdf"), 
+       width = 17.8,
+       height = 11.1,
+       units = "cm")
+```
+
+
+# Make same plot with facets by county. Add in precip data from CalSIMETAW
+```{r}
+# only keep counties of interest
+counties <- c("Tehama", "Glenn", "Butte", "Colusa", "Sutter", "Yuba", "Yolo", "Solano", "Sacramento", "San Joaquin", "Stanislaus", "Merced", "Madera", "Fresno", "Kings", "Tulare", "Kern")
+counties <- unique(data$NAME[data$NAME %in% counties])
+
+# make the dataset with CIs
+bardata <- rbindlist(lapply(counties, make_df, "NAME"))
+bardata$COUNTY_NAME <- bardata$NAME
+
+# add CalSIMETAW precip
+scalar = 1.2 # mm/month to cm/year
+
+CS <- fread(calsimetaw_loc)
+CS <- filter(CS, COUNTY_NAME %in% counties)
+CS$Date <- as.Date(CS$Date)
+CS$month <- month(CS$Date)
+CS <- CS %>% 
+  group_by(month, COUNTY_NAME) %>% 
+  summarize(Pcp = mean(Pcp)*scalar)
+
+CS$ET <- CS$Pcp
+CS$type <- "Pcp"
+CS$min <- NA
+CS$max <- NA
+common_cols <- intersect(colnames(CS), colnames(bardata))
+bardata$month <- as.numeric(bardata$month)
+bardata <- rbind(
+  subset(CS, select = common_cols), 
+  subset(bardata, select = common_cols)
+)
+bardata$type <- as.factor(bardata$type)
+
+# bardata <- merge(CS, bardata, by = c("COUNTY_NAME", "month"))
+
+# plot the dataset with the different facets by crop. 
+
+ggplot(bardata, aes(x = month)) +
+  geom_line(aes(y = ET, color = type, group = type)) +
+  geom_ribbon(aes(ymin = min, ymax = max, fill = type, group = type), alpha = 0.2) +
+  ylab("mm/month") +
+  xlab("Month") +
+  theme_bw() +
+  scale_x_continuous(breaks = c(1:12)) +
+  scale_color_manual(
+    values = c("ag_ET" = "seagreen", "ET_pred" = "goldenrod4", "ET" = "black", "Pcp" = "grey"),
+    breaks = c("ag_ET", "ET_pred", "ET", "Pcp"),
+    labels = c("Agricultural ET", "Natural ET", "Total ET", "Precipitation"),
+    name = ""
+  ) +
+  scale_fill_manual(
+    values = c("ag_ET" = "seagreen", "ET_pred" = "goldenrod4", "ET" = "black", "Pcp" = "white"),
+    breaks = c("ag_ET", "ET_pred", "ET", "Pcp"),
+    labels = c("Agricultural ET", "Natural ET", "Total ET", "Precipitation"),
+    name = ""
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(size = 1.5)),
+    fill = guide_legend(override.aes = list(size = 0.5))
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1, size = 11),
+    axis.title.x = element_text(size = 11),
+    axis.text.y = element_text(size = 11),
+    axis.title.y = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11)
+  ) + 
+  facet_wrap(vars(COUNTY_NAME))
+
+ggsave(here(experiment_path, "Figure_1.5_counties.pdf"), 
+       width = 17.8,
+       height = 11.1,
+       units = "cm")
+```
