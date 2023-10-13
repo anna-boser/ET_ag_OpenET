@@ -26,7 +26,7 @@ source(here("helper_functions.R"))
 ```{r}
 experiment_name <- "fallow0.05,2_4-18_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
-data <- fread(file = here(experiment_path, "agriculture_tidy.csv")) #, nrows = 20000)
+data <- fread(file = here(experiment_path, "agriculture_tidy.csv"))#, nrows = 20000)
 # test <- fread(here(test_data_path, paste0("fallow0,2_test.csv"))) # the pixels not used in training or validation 
 test <- fread(here(test_data_path, paste0("fallow0.05,2_test.csv"))) # the pixels not used in training or validation 
 
@@ -138,13 +138,13 @@ ggplot(bardata, aes(x = month)) +
   theme_bw() +
   scale_x_continuous(breaks = c(1:12)) +
   scale_color_manual(
-    values = c("ag_ET" = "seagreen", "ET_pred" = "goldenrod4", "ET" = "black"),
+    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
     breaks = c("ag_ET", "ET_pred", "ET"),
     labels = c("Agricultural ET", "Natural ET", "Total ET"),
     name = ""
   ) +
   scale_fill_manual(
-    values = c("ag_ET" = "seagreen", "ET_pred" = "goldenrod4", "ET" = "black"),
+    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
     breaks = c("ag_ET", "ET_pred", "ET"),
     labels = c("Agricultural ET", "Natural ET", "Total ET"),
     name = ""
@@ -222,13 +222,13 @@ ggplot(bardata, aes(x = month)) +
   theme_bw() +
   scale_x_continuous(breaks = c(1:12)) +
   scale_color_manual(
-    values = c("ag_ET" = "seagreen", "ET_pred" = "goldenrod4", "ET" = "black"),
+    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
     breaks = c("ag_ET", "ET_pred", "ET"),
     labels = c("Agricultural ET", "Natural ET", "Total ET"),
     name = ""
   ) +
   scale_fill_manual(
-    values = c("ag_ET" = "seagreen", "ET_pred" = "goldenrod4", "ET" = "black"),
+    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
     breaks = c("ag_ET", "ET_pred", "ET"),
     labels = c("Agricultural ET", "Natural ET", "Total ET"),
     name = ""
@@ -301,13 +301,13 @@ ggplot(bardata, aes(x = month)) +
   theme_bw() +
   scale_x_continuous(breaks = c(1:12)) +
   scale_color_manual(
-    values = c("ag_ET" = "seagreen", "ET_pred" = "goldenrod4", "ET" = "black", "Pcp" = "grey"),
+    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black", "Pcp" = "grey"),
     breaks = c("ag_ET", "ET_pred", "ET", "Pcp"),
     labels = c("Agricultural ET", "Natural ET", "Total ET", "Precipitation"),
     name = ""
   ) +
   scale_fill_manual(
-    values = c("ag_ET" = "seagreen", "ET_pred" = "goldenrod4", "ET" = "black", "Pcp" = "white"),
+    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black", "Pcp" = "white"),
     breaks = c("ag_ET", "ET_pred", "ET", "Pcp"),
     labels = c("Agricultural ET", "Natural ET", "Total ET", "Precipitation"),
     name = ""
@@ -333,3 +333,58 @@ ggsave(here(experiment_path, "Figure_1.5_counties.pdf"),
        height = 11.1,
        units = "cm")
 ```
+
+```{r}
+# break down by sacramento and san joaquin valleys
+
+sac_counties <- c("Tehama", "Glenn", "Butte", "Colusa", "Sutter", "Yuba", "Yolo", "Solano", "Sacramento")
+sj_counties <- c("San Joaquin", "Stanislaus", "Merced", "Madera", "Fresno", "Kings", "Tulare", "Kern")
+data$valley <- ifelse(data$NAME %in% sac_counties, "Sacramento Valley", "San Joaquin Valley")
+
+valleys <- unique(data$valley)
+bardata <- rbindlist(lapply(valleys, make_df, "valley"))
+
+# plot the dataset with the different facets by crop. 
+bardata$month <- as.numeric(bardata$month)
+
+ggplot(bardata, aes(x = month)) +
+  geom_line(aes(y = ET, color = type, group = type)) +
+  geom_ribbon(aes(ymin = min, ymax = max, fill = type, group = type), alpha = 0.2) +
+  ylab("mm/month") +
+  xlab("Month") +
+  theme_bw() +
+  scale_x_continuous(breaks = c(1:12)) +
+  scale_color_manual(
+    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
+    breaks = c("ag_ET", "ET_pred", "ET"),
+    labels = c("Agricultural ET", "Natural ET", "Total ET"),
+    name = ""
+  ) +
+  scale_fill_manual(
+    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
+    breaks = c("ag_ET", "ET_pred", "ET"),
+    labels = c("Agricultural ET", "Natural ET", "Total ET"),
+    name = ""
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(size = 1.5)),
+    fill = guide_legend(override.aes = list(size = 0.5))
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1, size = 11),
+    axis.title.x = element_text(size = 11),
+    axis.text.y = element_text(size = 11),
+    axis.title.y = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11)
+  ) + 
+  facet_wrap(vars(valley))
+
+ggsave(here(experiment_path, "Figure_1.5_valleys.pdf"), 
+       width = 17.8,
+       height = 11.1,
+       units = "cm")
+```
+
