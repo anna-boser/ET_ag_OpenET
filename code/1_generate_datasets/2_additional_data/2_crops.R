@@ -135,5 +135,10 @@ get_croptypes <- function(year){
   return(cropdf)
 }
 
-all_years <- rbindlist(lapply(years, get_croptypes))
-fwrite(all_years, file = here(crops_dwr_table_loc), append = FALSE)
+# all_years <- rbindlist(lapply(years, get_croptypes))
+# fwrite(all_years, file = here(crops_dwr_table_loc), append = FALSE)
+
+# process DWR years 2014 and 2020 
+# such that they can later be used to discard young and old orchards when doing the simulations
+years = c(2020) # years of available DWR data
+lapply(years, get_croptypes)
