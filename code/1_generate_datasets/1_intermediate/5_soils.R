@@ -1,6 +1,8 @@
 # This script uses the CA storie index data obtained from 
 # Campbell, Steve - FPAC-NRCS, Portland, OR <steve.campbell@usda.gov>
-# and processes it to get a consistent 70m storie index raster over CA
+# and cleans it to generate a raster on the gNATSGO grid
+# It is then moved to 5.5_soils to be resmapled to the consistent grid used for this study
+# Finally, there is code at the end of this file that trims it to the study extent. 
 
 # Anna Boser October 22 2021
 
