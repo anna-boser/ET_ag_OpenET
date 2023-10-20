@@ -5,6 +5,7 @@
 library(raster)
 library(data.table)
 library(dplyr)
+library(tidyr)
 library(exactextractr)
 library(tidyverse)
 library(sf)
@@ -29,6 +30,7 @@ cropnames <- c("P" = "Pasture",
                "C" = "Citrus and subtropical",
                "D" = "Deciduous fruits and nuts",
                "YP" = "Young Perennial",
+               "Y" = "Young Perennial",
                "F" = "Field crops",
                "R" = "Rice",
                "I"= "Idle")
@@ -89,20 +91,30 @@ get_croptypes <- function(year){
   DWR <- st_zm(DWR) # DWR has in 3 dimentsions with 0 for z value
   polygons <- st_make_valid(DWR)
   
-  DWR <- filter(DWR, CLASS2 != "U") # remove urban land
+  if (year == 2014){ # 2014 is in a different format
+    polygons$subcropnames <- polygons$Crop2014
+    polygons$CLASS2 <- gsub(" ", "", substr(polygons$DWR_Standa, 1, 2))
+  }
+  
+  polygons <- filter(polygons, !(CLASS2 %in% c("U","NR"))) # remove urban land and riparian areas (ripartian only present in 2014)
   
   # Match raster and polygon crs 
   polygons_reproj <- polygons %>% 
     st_transform(st_crs(grid))
   
   # large general class
-  geoweights <- rbindlist(exactextractr::exact_extract(grid, polygons_reproj, progress = T, include_cell = T, include_cols = c("CLASS2", "MULTIUSE"), include_xy = T))
+  geoweights <- rbindlist(exactextractr::exact_extract(grid, polygons_reproj, progress = T, include_cell = T, include_cols = c("CLASS2"), include_xy = T)) # for years 2016+, can also include the column "MULTIUSE"
   
   # crop subclasses
-  subpolygons_reproj <- polygons_reproj %>% filter(SUBCLASS2 != "**")
-  subgeoweights <- rbindlist(exactextractr::exact_extract(grid, subpolygons_reproj, progress = T, include_cell = T, include_cols = c("CLASS2", "SUBCLASS2"), include_xy = T))
-  subgeoweights$subclass <- paste0(subgeoweights$CLASS2, subgeoweights$SUBCLASS2)
-  
+  if (year != 2014){ #2014's subclass looks a bit different
+    subpolygons_reproj <- polygons_reproj %>% filter(SUBCLASS2 != "**")
+    subgeoweights <- rbindlist(exactextractr::exact_extract(grid, subpolygons_reproj, progress = T, include_cell = T, include_cols = c("CLASS2", "SUBCLASS2"), include_xy = T))
+    subgeoweights$subclass <- paste0(subgeoweights$CLASS2, subgeoweights$SUBCLASS2)
+  } else{
+    subpolygons_reproj <- filter(polygons_reproj, !is.na(subcropnames))
+    subgeoweights <- rbindlist(exactextractr::exact_extract(grid, subpolygons_reproj, progress = T, include_cell = T, include_cols = c("CLASS2", "subcropnames"), include_xy = T))
+  }
+    
   # only keep pixels that are 100% a certain crop
   crop_pixels <- geoweights[coverage_fraction==1]
   crop_pixels$coverage_fraction <- NULL
@@ -120,7 +132,9 @@ get_croptypes <- function(year){
   
   # add in the full name of the crop type
   crop_pixels$cropnames <- cropnames[crop_pixels$CLASS2]
-  subcrop_pixels$subcropnames <- subcropnames[subcrop_pixels$subclass]
+  if (year != 2014){ # in 2014 they're already labeled with their full names
+    subcrop_pixels$subcropnames <- subcropnames[subcrop_pixels$subclass]
+  }
   
   # integrate crop_pixels and subcrop_pixels
   subcrop_pixels$CLASS2=NULL
@@ -135,10 +149,10 @@ get_croptypes <- function(year){
   return(cropdf)
 }
 
-# all_years <- rbindlist(lapply(years, get_croptypes))
-# fwrite(all_years, file = here(crops_dwr_table_loc), append = FALSE)
+all_years <- rbindlist(lapply(years, get_croptypes))
+fwrite(all_years, file = here(crops_dwr_table_loc), append = FALSE)
 
 # process DWR years 2014 and 2020 
 # such that they can later be used to discard young and old orchards when doing the simulations
-years = c(2020) # years of available DWR data
+years = c(2014, 2020) # years of available DWR data
 lapply(years, get_croptypes)
