@@ -49,6 +49,9 @@ The first section of the pipeline, `code/1_generate_datasets`, is dedicated to a
 3. Additional tabular datasets to be used in the analysis phase that have the following information for each pixel for the main dataset:
   - County
   - Crop type
+    - Yearly for 2016, 2018, and 2019 for the main dataset. Used to determine if land was fallow (see 2.) as well as in analysis. 
+    - Yearly for 2016, 2018, and 2019, but where fallow lands are also cross-referenced with the CDL to make a more conservative training dataset (see 2.). 
+    - 2014 and 2020 also processed to help gauge orchard age in the analysis. 
   - Groundwater sub-basin
 
 #### Intermediate datasets
