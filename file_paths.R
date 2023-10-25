@@ -196,10 +196,10 @@ et0_zone_table_loc <- here("data", "4_for_analysis", "additional_data", "ET0_zon
 crops_dwr_table_path <- here("data", "4_for_analysis", "additional_data") # for the seperate years
 crops_dwr_table_loc <- here("data", "4_for_analysis", "additional_data", "crops_all_dwr_fallow.csv")
 
-# Same table as crops_dwr_table_loc but with fallow fields filtered according to CDL
+# A table of fallow fields according to CDL
 # created in 1_generate_datasets/1_intermediate/additional_data/2.5_crops.R
-crops_table_path <- here("data", "4_for_analysis", "additional_data") # for the seperate years
-crops_table_loc <- here("data", "4_for_analysis", "additional_data", "crops.csv")
+fallow_CDL_table_path <- here("data", "4_for_analysis", "additional_data") # for the seperate years
+fallow_CDL_table_loc <- here("data", "4_for_analysis", "additional_data", "fallow_CDL.csv")
 
 # datasets processed for training of the ML model (has CDL, CPAD, and FVEG natural pixels)
 # created in 1_generate_datasets/3_data_aggregation/datasets_for_ml.R
