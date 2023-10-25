@@ -16,9 +16,13 @@ if (!file.exists(ag_dwr_years_loc)){
   fwrite(ag, ag_dwr_years_loc, append=FALSE)
 }
 
-clean_and_split <- function(remove_percent, cluster_size, fallow_data_loc=fallow_data_loc){
+clean_and_split <- function(remove_percent, cluster_size, cdl = FALSE){
 
-  fallow <- fread(fallow_data_loc)
+  if (cdl == FALSE){
+    fallow <- fread(fallow_data_loc)
+  } else {
+    fallow <- fread(fallow_cdl_data_loc)
+  }
 
   # clean -- some "fallow" pixels are obviously not actually fallow based on unreasonably high ET values
 
@@ -74,12 +78,18 @@ clean_and_split <- function(remove_percent, cluster_size, fallow_data_loc=fallow
   test <- filtered_fallow %>% filter(cluster %in% test_cs)
 
   # save
-  fwrite(train, here(training_data_path, paste0("fallow", remove_percent, ",", cluster_size, ".csv")), append=FALSE)
-  fwrite(val, here(val_data_path, paste0("fallow", remove_percent, ",", cluster_size, "_val.csv")), append=FALSE)
-  fwrite(test, here(test_data_path, paste0("fallow", remove_percent, ",", cluster_size, "_test.csv")), append=FALSE)
+  if (cdl == FALSE){
+    fwrite(train, here(training_data_path, paste0("fallow", remove_percent, ",", cluster_size, ".csv")), append=FALSE)
+    fwrite(val, here(val_data_path, paste0("fallow", remove_percent, ",", cluster_size, "_val.csv")), append=FALSE)
+    fwrite(test, here(test_data_path, paste0("fallow", remove_percent, ",", cluster_size, "_test.csv")), append=FALSE)
+  } else {
+    fwrite(train, here(training_data_path, paste0("fallow_cdl", remove_percent, ",", cluster_size, ".csv")), append=FALSE)
+    fwrite(val, here(val_data_path, paste0("fallow_cdl", remove_percent, ",", cluster_size, "_val.csv")), append=FALSE)
+    fwrite(test, here(test_data_path, paste0("fallow_cdl", remove_percent, ",", cluster_size, "_test.csv")), append=FALSE)
+  }
 }
 
 clean_and_split(.05, 2) # DWR fallow lands, remove 5%
 clean_and_split(0, 2) # DWR fallow lands
-clean_and_split(0.05, 2, fallow_cdl_data_loc) # DWR and CDL fallow lands, remove 5%
-clean_and_split(0, 2, fallow_cdl_data_loc) # DWR and CDL fallow lands
+clean_and_split(0.05, 2, cdl = TRUE) # DWR and CDL fallow lands, remove 5%
+clean_and_split(0, 2, cdl = TRUE) # DWR and CDL fallow lands
