@@ -50,7 +50,8 @@ The first section of the pipeline, `code/1_generate_datasets`, is dedicated to a
   - County
   - Crop type
     - Yearly for 2016, 2018, and 2019 for the main dataset. Used to determine if land was fallow (see 2.) as well as in analysis. 
-    - Yearly for 2016, 2018, and 2019, but where fallow lands are also cross-referenced with the CDL to make a more conservative training dataset (see 2.). 
+    - Fallow lands for 2016, 2018, and 2019.
+    - Fallow lands for 2016, 2018, and 2019, but where fallow lands are also cross-reference with the CDL to make a more conservative training dataset (see 2.). 
     - 2014 and 2020 also processed to help gauge orchard age in the analysis. 
   - Groundwater sub-basin
 
@@ -70,8 +71,14 @@ In `code/1_generate_datasets/2_additional_data`, we create the tabular datasets 
 
 #### Data aggregation
 
-Once these intermediate datasets have been generated, they can be aggregated to create datasets (`code/1_generate_datasets/3_data_aggregation`). We first create the main dataset in 1_datasets_for_ml.R by turning the gridded datasets into a singluar tabular dataset. Then, we add in county or crop type information to the dataset in `3_add_crop_county_data.R`. It is especially important to add in crop type information at this stage, since it is necessary to generate datasets for model training, validation, and testing, since these data are all exclusively over fallow/idle lands. This last step happens 
+Once these intermediate datasets have been generated, they can be aggregated to create datasets (`code/1_generate_datasets/3_data_aggregation`). We first create the main dataset in `1_datasets_for_ml.R` by turning the gridded datasets into a singluar tabular dataset. Then, we add in county or crop type information to the dataset in `3_add_crop_county_data.R`. It is especially important to add in crop type information at this stage, since it is necessary to generate datasets for model training, validation, and testing, since these data are all exclusively over fallow/idle lands. 
+
+Finally, in `5_clean_and_split_fallow.R`, we retrieve all the fallow observations from the main dataset and split them into training, validation, and test groups. The function to create a split takes three arguments: (1) the percent of the dataset you want to discard based on the highest growing season ET values (to avoid contamination from lands that are irrigated instead of fallow, (2) the size of areas to group for the spatial split, and (3) the dataset you want to use -- that is, if you want the dataset that has all fallow lands or the one that is cross-referenced with the CDL. We create splits with 2 km hold out zones and 
 
 > Note to self: get rid of all the natural land cover stuff and also rename 1_datasets_for_ml
 > 4_visualize.Rmd is kinda interesting -- it makes those histograms comparing what I trained on and what I applied to different. Don't need so should get rid of but good to keep in mind
 > get rid of everything else
+
+### The artificial counterfactual
+
+Here, we use the training and test data to train machine learning models to 
