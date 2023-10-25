@@ -81,9 +81,13 @@ Finally, in `5_clean_and_split_fallow.R`, we retrieve all the fallow observation
 
 In the second part of the pipeline `code/2_counterfactual`, we use the training and test data to train machine learning models that predict the ET that would happen over a field if that land were fallow. To do so, we first create a model class in `model_class.py` that allows you to define a model using a variety of regressors, tune hyperparameters, train the model, and generate predictions for the train, val, and test splits for whichever split you would like. This class is then called in `experiments.py` where you can edit this file as needed to train a variety of models and generate predictions as needed over the validation and test sets, as well as the full dataset of agricultural lands. 
 
+> note to self -- the model class has a "train_or_test" thing that is outdated -- was used when I was doing veg stuff. Remove for clarity...? 
+
 Every time an experiment is run in `experiments.py`, this creates a new folder with the name of the experiment which contains the following: 
 - the `model_class.py` and `experiments.py` files as they were when the experiment was run, for reference of what parameters were used
 - the trained model
-- any predictions that the experiment producedd
+- any predictions that the experiment produced
+
+At this stage, we additionally run tests to check the importance of different variables in the prediction. 
 
 > Note to self: get rid of apply_model.py
