@@ -58,7 +58,9 @@ CDL_crossref <- function(year){
   fallow_CDL <- as.data.frame(fallow_resampled, xy = TRUE)
   
   # only keep the pixels where there is fallow land
-  fallow_CDL <- fallow_CDL[fallow_CDL[3] == 1, ]
+  colnames(fallow_CDL)[3] <- "fallow"
+  fallow_CDL <- filter(fallow_CDL, !is.na(fallow), fallow == 1)
+  fallow_CDL$fallow <- NULL
   
   ## Save outputs 
   ## -----------------------------------------------
