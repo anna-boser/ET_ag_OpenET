@@ -65,9 +65,7 @@ To build the first two datasets described above, we first gather the required ex
 
 #### Additional datasets
 
-In `code/1_generate_datasets/2_additional_data`, we create the tabular datasets of county (`1_counties.R`), crop type (`2_crops.R`), and groundwater sub-basin (`5_basin.R`) for each pixel. 
-
-> Note to self: 2.5_crops.R is cool in that it only keeps fallow feilds that the CDL also thinks is fallow. I'm tempted to use this to see what happens to the seasonality of natural ET if I train the model on this instead. Would need to make a split for this too. 
+In `code/1_generate_datasets/2_additional_data`, we create the tabular datasets of county (`1_counties.R`), crop type (`2_crops.R`, `2.5_crops.R`), and groundwater sub-basin (`5_basin.R`) for each pixel. 
 
 #### Data aggregation
 
