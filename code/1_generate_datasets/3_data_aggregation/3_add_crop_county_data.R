@@ -34,3 +34,16 @@ fwrite(data, here(ag_data_loc), append = FALSE)
 # fallow only
 fallow <- filter(data, CLASS2 == "X")
 fwrite(fallow, fallow_data_loc, append = FALSE)
+
+# get a fallow only dataset that is also CDL cross referenced
+fallow_cdl <- fread(fallow_CDL_table_loc)
+fallow_cdl$x <- round(fallow_cdl$x, 7)
+fallow_cdl$y <- round(fallow_cdl$y, 7)
+# fallow_cdl$key <- paste(fallow_cdl$x, fallow_cdl$y, fallow_cdl$year)
+# 
+# fallow$key <- paste(fallow$x, fallow$y, fallow$year)
+# 
+# fallow_dwr_cdl <- filter(fallow, key %in% fallow_cdl$key)
+
+fallow_dwr_cdl  <- semi_join(fallow, fallow_cdl, by = c("x", "y", "year"))
+fwrite(fallow_dwr_cdl, fallow_cdl_data_loc, append = FALSE)

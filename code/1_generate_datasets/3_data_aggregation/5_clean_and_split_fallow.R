@@ -16,7 +16,7 @@ if (!file.exists(ag_dwr_years_loc)){
   fwrite(ag, ag_dwr_years_loc, append=FALSE)
 }
 
-clean_and_split <- function(remove_percent, cluster_size){
+clean_and_split <- function(remove_percent, cluster_size, fallow_data_loc=fallow_data_loc){
 
   fallow <- fread(fallow_data_loc)
 
@@ -79,5 +79,7 @@ clean_and_split <- function(remove_percent, cluster_size){
   fwrite(test, here(test_data_path, paste0("fallow", remove_percent, ",", cluster_size, "_test.csv")), append=FALSE)
 }
 
-clean_and_split(.05, 2)
-clean_and_split(0, 2)
+clean_and_split(.05, 2) # DWR fallow lands, remove 5%
+clean_and_split(0, 2) # DWR fallow lands
+clean_and_split(0.05, 2, fallow_cdl_data_loc) # DWR and CDL fallow lands, remove 5%
+clean_and_split(0, 2, fallow_cdl_data_loc) # DWR and CDL fallow lands

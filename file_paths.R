@@ -210,8 +210,12 @@ natural_data_path <- here("data", "3_for_counterfactual", "training_data")
 ag_data_loc <- here("data", "3_for_counterfactual", "agriculture", "agriculture.csv")
 
 # same as ag_data_loc but only the fallow fields
-# created in 1_generate_datasets/3_data_aggregation/3_fallow_only.R
+# created in 1_generate_datasets/3_data_aggregation/3_add_crop_county_data.R
 fallow_data_loc <- here("data", "3_for_counterfactual", "agriculture", "fallow.csv")
+
+# same as fallow_data_loc but only the fallow fields that were also fallow in the cdl
+# created in 1_generate_datasets/3_data_aggregation/3_add_crop_county_data.R
+fallow_cdl_data_loc <- here("data", "3_for_counterfactual", "agriculture", "fallow_cdl.csv")
 
 # path to the distributions of distances between 500 random ag pixels to natural land for the different natural test sets
 # created in 3_analysis/1_additional_data_manipulation/2_ag_natural_distance.R
