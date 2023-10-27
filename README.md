@@ -99,7 +99,7 @@ Notable experiments include:
   - Here we use the split trained on the fallow lands as determined by the DWR LandIQ dataset (`fallow`) *and* the cropland data layer (`cdl`). The spatial hold out sets used to make the split are 2km wide in either direction (`2`). This experiment was run on October 25, 2023 (`10-25`) and a gradient boosting regressor was used (`gb`).
   - This experiment is used to ensure that incorrect classification of fallow lands is not causing inflated natural ET estimates, especially during the growing season. 
 
-At this stage, we additionally check the importance of different variables used in the model and plot this (`feature_importance.py`). We only run this for the experiment we elect for our analysis, 
+At this stage, we additionally check the importance of different variables used in the model and plot this (`feature_importance.py`). We only run this for the experiment we elect for our analysis, `fallow0.05,2_4-18_gb`.
 
 > Note to self: get rid of apply_model.py
 
