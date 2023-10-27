@@ -88,7 +88,18 @@ Every time an experiment is run in `experiments.py`, this creates a new folder w
 - the trained model
 - any predictions that the experiment produced
 
-At this stage, we additionally check the importance of different variables used in the model and plot this (`feature_importance.py`). 
+Notable experiments include: 
+- `fallow0.05,2_4-18_gb`:
+  - Here we use the split trained on the fallow lands as determined by the DWR LandIQ dataset (`fallow`), but with the fallow lands that have the 5% highest ET in the growing season removed (`0.05`). The spatial hold out sets used to make the split are 2km wide in either direction (`2`). This experiment was run on April 4, 2023 (`4-18`) and a gradient boosting regressor was used (`gb`).
+  - This is the final model we elect for our work and analysis. 
+- `fallow0,2_4-18_gb`:
+  - Here we use the split trained on the fallow lands as determined by the DWR LandIQ dataset (`fallow`). The spatial hold out sets used to make the split are 2km wide in either direction (`2`). This experiment was run on April 4, 2023 (`4-18`) and a gradient boosting regressor was used (`gb`).
+  - This model is used to check whether removing the fallow lands that have the 5% highest ET in the growing season has a significant impact on the results. 
+- `fallow_cdl0,2_10-25_gb`:
+  - Here we use the split trained on the fallow lands as determined by the DWR LandIQ dataset (`fallow`) *and* the cropland data layer (`cdl`). The spatial hold out sets used to make the split are 2km wide in either direction (`2`). This experiment was run on October 25, 2023 (`10-25`) and a gradient boosting regressor was used (`gb`).
+  - This experiment is used to ensure that incorrect classification of fallow lands is not causing inflated natural ET estimates, especially during the growing season. 
+
+At this stage, we additionally check the importance of different variables used in the model and plot this (`feature_importance.py`). We only run this for the experiment we elect for our analysis, 
 
 > Note to self: get rid of apply_model.py
 
