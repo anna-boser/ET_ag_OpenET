@@ -51,6 +51,11 @@ if (tidy == FALSE){
   data$year <- str_extract(data$year, '(?<=_)\\d+') %>% as.numeric()
   data <- select(data, !names(data)[grepl("year_", names(data))])
 }
+
+write("montly stats" ,file=report,append=TRUE)
+MSE <- mean((data$ET_pred - data$ET)^2, na.rm=TRUE)
+line <- paste("R2:", round(r2, 3), "Bias:", round(Bias, 3), "RMSE:", round(RMSE, 3), "MAE:", round(MAE, 3))
+write(line,file=report,append=TRUE)
 ```
 
 ### A scatterplot with months averaged out
@@ -80,6 +85,7 @@ ggsave(here(experiment_path, "Figure_S1.pdf"),
        height = 11.4,
        units = "cm")
 
+write("yearly stats" ,file=report,append=TRUE)
 line <- paste("R2:", round(r2, 3), "Bias:", round(Bias, 3), "RMSE:", round(RMSE, 3), "MAE:", round(MAE, 3))
 write(line,file=report,append=TRUE)
 ```
