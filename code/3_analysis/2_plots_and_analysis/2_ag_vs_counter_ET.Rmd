@@ -31,16 +31,40 @@ source(here("helper_functions.R"))
 experiment_name <- "fveg_subset_6-7_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 test <- fread(here(test_data_path, paste0("fallow0.05,2_test.csv"))) # the pixels not used in training or validation
-```
-
-```{r}
 data <- fread(file = here(experiment_path, "agriculture_yearly.csv"))
+
+report <- here(experiment_path, "2_report.txt")
+if (file.exists(report)) {file.remove(report)} # start fresh every time you render
 ```
 
+# clean data
 ```{r}
 data <- data[cropnames != "Urban - residential, commercial, and industrial, unsegregated",] # remove urban
 data$cropnames <- ifelse(data$cropnames %in% c("Unclassified fallow", "Idle"), "Fallow", data$cropnames) # rename unclassified
 ```
+
+## what percent of the variance is due to error? 
+```{r}
+shrubland_rmse = 19.96 # mm/month
+agriculture_rmse = 19.97 # mm/month
+model_error_mse = 84.37424 # mm/month
+
+monthly_var_mm_month = (shrubland_rmse^2) + (agriculture_rmse^2) + model_error_mse
+yearly_var_mm_month = monthly_var_mm_month/12
+yearly_var = yearly_var_mm_month
+
+# a conservative estimate of how much actual variance we've got is simply to remove this from our overall variance
+error_attribution = yearly_var/var(data$ag_ET)
+
+# write these in the report
+line = paste("Total variance in all the dataset:", var(data$ag_ET))
+write(line,file=report,append=TRUE)
+line = paste("Total variance in all the dataset:", yearly_var)
+write(line,file=report,append=TRUE)
+line = paste("Proportion of total variance caused by error:", error_attribution)
+write(line,file=report,append=TRUE)
+```
+
 
 ## variogram
 ```{r, eval = TRUE}
