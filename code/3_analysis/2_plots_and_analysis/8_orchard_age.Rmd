@@ -1,0 +1,251 @@
+---
+title: "orchard age analysis"
+author: "Anna Boser"
+date: "2023-10-06"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(sp)
+library(here)
+library(stringr)
+library(sf)
+library(data.table)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(latex2exp)
+library(lfe)
+
+source(here("file_paths.R"))
+source(here("helper_functions.R"))
+```
+
+# read in data; only keep YP or orchards (vineyards; citrus & subtropical; deciduous fruits & nuts)
+```{r}
+experiment_name <- "fallow0.05,2_4-18_gb"
+experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+data <- fread(file = here(experiment_path, "agriculture_yearly.csv"))# , nrows = 100000)
+# test <- fread(here(test_data_path, paste0("fallow0,2_test.csv"))) # the pixels not used in training or validation 
+test <- fread(here(test_data_path, paste0("fallow0.05,2_test.csv"))) # the pixels not used in training or validation 
+
+report <- here(experiment_path, "8_report.txt")
+if (file.exists(report)) {file.remove(report)} # start fresh every time you render
+```
+
+## clean data
+```{r}
+data <- filter(data, coverage_fraction>.5)
+data <- filter(data, cropnames %in% c("Young Perennial", "Deciduous fruits and nuts", "Vineyards", "Citrus and subtropical"))
+```
+
+```{r}
+# create clusters based on location and year. Function creates clusters of size dist km. 
+data$cluster <- mapply(assign_cluster, data$x, data$y, 75)
+
+# scale to cm/year instead of mm/month
+# scalar = 1.2 # turns mm/month to cm/year
+# data <- scale(data, scalar)
+
+# control for variation across years
+data <- year_control(data)
+```
+
+# load in the crop type data for 2014-2020
+```{r}
+get_crop <- function(year){
+  crop <- fread(here(crops_dwr_table_path, paste0("crops_all_dwr_fallow", year, ".csv")))
+  crop$year <- year
+  return(crop)
+}
+crop_data <- rbindlist(lapply(c(2014, 2016, 2018, 2019, 2020), get_crop), fill = TRUE)
+```
+
+
+
+# If orchard: Add a column indicating how far past YP they are and a helper column
+```{r}
+data$year <- as.numeric(as.character(data$year)) # was factor -- first turn to character to get rid of levels and then numeric
+data$loc <- paste(sprintf("%.7f", data$x), sprintf("%.7f", data$y))
+orchards <- filter(data, cropnames != "Young Perennial") # this is what you will use to make your figure
+
+crop_data$year <- as.numeric(as.character(crop_data$year)) # was factor -- first turn to character to get rid of levels and then numeric
+crop_data$loc <- paste(sprintf("%.7f", crop_data$x), sprintf("%.7f", crop_data$y))
+
+# maximum year YP was seen
+max_YP_year <- crop_data %>%
+  filter(cropnames == "Young Perennial") %>%
+  group_by(loc) %>%
+  mutate(max_YP_year = max(year)) %>%
+  filter(max_YP_year == year) %>% # only one observation per pixel
+  select(loc, max_YP_year) %>%
+  ungroup()
+
+max_YP_year <- max_YP_year[!duplicated(paste(max_YP_year$loc, max_YP_year$max_YP_year)),]
+
+orchards <- merge(orchards, max_YP_year, by = c("loc"), all.x = TRUE, all.y = FALSE)
+
+# first year that this pixel is not an orchard -- does not necessarily need to be YP since it could be replaced by anything
+min_YP_year <- crop_data %>%
+  filter(!(cropnames %in% c("Young Perennial", "Deciduous fruits and nuts", "Vineyards", "Citrus and subtropical"))) %>%
+  group_by(loc) %>%
+  mutate(min_YP_year = min(year)) %>%
+  filter(min_YP_year == year) %>% # only one observation per pixel
+  select(loc, min_YP_year) %>%
+  ungroup()
+
+min_YP_year <- min_YP_year[!duplicated(paste(min_YP_year$loc, min_YP_year$min_YP_year)),]
+
+orchards <- merge(orchards, min_YP_year, by = c("loc"), all.x = TRUE, all.y = FALSE)
+
+```
+
+```{r}
+# how many years post YP
+orchards$age <- orchards$year - orchards$max_YP_year
+# max_age <- max(orchards$age, na.rm = TRUE)
+orchards$age <- ifelse(is.na(orchards$age) | orchards$age < 0, "Intermediate", orchards$age)
+# orchards$age <- ifelse(orchards$age < 0, orchards$age + 2*(max_age + 1), orchards$age)
+# orchards$age <- as.factor(orchards$age)
+
+# how close to being ripped out (t minus)
+orchards$old <- orchards$year - orchards$min_YP_year
+
+orchards$age <- ifelse(is.na(orchards$old) | orchards$old > 0, orchards$age, paste0(" ", orchards$old))
+
+unique(orchards$age)
+```
+
+# If YP: Add a column indicating how far from becoming an orchard YP fields are are
+
+```{r}
+min_orch_year <- crop_data %>%
+  filter(cropnames != "Young Perennial") %>%
+  group_by(loc) %>%
+  mutate(min_orch_year = min(year)) %>%
+  filter(min_orch_year == year) %>% # only one observation per pixel
+  select(loc, min_orch_year) %>%
+  ungroup()
+
+min_orch_year <- min_orch_year[!duplicated(paste(min_orch_year$loc, min_orch_year$min_orch_year)),]
+
+YP <- filter(data, cropnames == "Young Perennial")
+YP <- merge(YP, min_orch_year, by = c("loc"), all.x = TRUE, all.y = FALSE)
+```
+
+```{r}
+YP$age <- YP$year - YP$min_orch_year
+YP <- filter(YP, YP$age < 0) 
+YP$age <- YP$age
+
+unique(YP$age)
+
+```
+
+
+# Plot out ag ET as a function of both of these. 
+```{r}
+age_df <- rbind(orchards, YP, fill=TRUE)
+age_df$age <- factor(age_df$age)
+
+ET_c <- felm(ag_ET~age-1 | 0  | 0 | cluster, age_df) # -1 means no intercept
+ET_df <- df_from_felm(ET_c, name_length = 4, var="age")
+rm(ET_c)
+```
+
+```{r}
+# Filter out the "Intermediate age" category and store the values
+all_others_data <- ET_df[ET_df$age == "Intermediate", ]
+
+ET_df$category <- factor(
+  case_when(
+    grepl("^Int", ET_df$age) ~ "Intermediate age",
+    grepl("^-", ET_df$age) ~ "Years to bearing fruit",
+    grepl("^ -", ET_df$age) ~ "Years to removal",
+    TRUE ~ "Years bearing fruit"
+  ), levels = c("Years to bearing fruit", "Years bearing fruit", "Intermediate age", "Years to removal")
+)
+
+ggplot(ET_df) + 
+  # Color the points by category
+  geom_pointrange(aes(x = factor(age, levels = c("-4", "-3", "-2", "-1", "1", "2", "3", "4", "5", "Intermediate", " -4", " -3", " -2", " -1")), y = ET, ymin = min, ymax = max, color = category)) +
+  
+  # Add a horizontal line for the "Intermediate age" mean
+  geom_hline(aes(yintercept = all_others_data$ET), color = "grey50", linetype="dashed") +
+  
+  # Add confidence interval band
+  geom_rect(aes(ymin = all_others_data$min, ymax = all_others_data$max, xmin = 0, xmax = length(unique(ET_df$age)) + 1), fill = "grey50", alpha = 0.02) +
+  
+  # Manual legend for the categories and "intermediate age"
+  scale_color_manual(name = "", values = c("Years to bearing fruit" = "palegreen2", "Years bearing fruit" = "green3", "Years to removal" = "darkgreen", "Intermediate age" = "grey50")) +
+  
+  # Axis labels
+  xlab("Orchard age") +
+  ylab("Agricultural ET (mm/month)") + 
+  theme_bw() + 
+  theme(legend.position = c(.8, .25), 
+        axis.text.x = element_text(angle = 20, hjust = 1))
+
+ggsave(here(experiment_path, paste0("Figure_S_Orchard_age.pdf")), 
+       width = 17.8,
+       height = 11.1,
+       units = "cm")
+```
+
+
+# Plot out ag ET as a function of both of these. 
+
+```{r}
+
+for (crop in c("Deciduous fruits and nuts", "Vineyards", "Citrus and subtropical")){
+  
+  age_df_filt <- filter(age_df, cropnames %in% c(crop, "Young Perennial"))
+
+  ET_c <- felm(ag_ET~age-1 | 0  | 0 | cluster, age_df_filt) # -1 means no intercept
+  ET_df <- df_from_felm(ET_c, name_length = 4, var="age")
+  rm(ET_c)
+  
+  # Filter out the "Intermediate age" category and store the values
+  all_others_data <- ET_df[ET_df$age == "Intermediate", ]
+  
+  ET_df$category <- factor(
+    case_when(
+      grepl("^Int", ET_df$age) ~ "Intermediate age",
+      grepl("^-", ET_df$age) ~ "Years to bearing fruit",
+      grepl("^ -", ET_df$age) ~ "Years to removal",
+      TRUE ~ "Years bearing fruit"
+    ), levels = c("Years to bearing fruit", "Years bearing fruit", "Intermediate age", "Years to removal")
+  )
+  
+  plot <- ggplot(ET_df) + 
+    # Color the points by category
+    geom_pointrange(aes(x = factor(age, levels = c("-4", "-3", "-2", "-1", "1", "2", "3", "4", "5", "Intermediate", " -4", " -3", " -2", " -1")), y = ET, ymin = min, ymax = max, color = category)) +
+    
+    # Add a horizontal line for the "Intermediate age" mean
+    geom_hline(aes(yintercept = all_others_data$ET), color = "grey50", linetype="dashed") +
+    
+    # Add confidence interval band
+    geom_rect(aes(ymin = all_others_data$min, ymax = all_others_data$max, xmin = 0, xmax = length(unique(ET_df$age)) + 1), fill = "grey50", alpha = 0.02) +
+    
+    # Manual legend for the categories and "intermediate age"
+    scale_color_manual(name = "", values = c("Years to bearing fruit" = "palegreen2", "Years bearing fruit" = "green3", "Years to removal" = "darkgreen", "Intermediate age" = "grey50")) +
+    
+    # Axis labels
+    xlab("Orchard age") +
+    ylab("Agricultural ET (mm/month)") + 
+    theme_bw() + 
+    theme(legend.position = c(.8, .25), 
+        axis.text.x = element_text(angle = 20, hjust = 1)) + 
+    ggtitle(crop)
+  
+  print(plot)
+  
+  ggsave(here(experiment_path, paste0("Figure_S_", crop, ".pdf")), 
+         plot = plot,
+         width = 17.8,
+         height = 11.1,
+         units = "cm")
+}
+```
+
