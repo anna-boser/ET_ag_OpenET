@@ -181,7 +181,7 @@ ggplot(ET_df) +
   scale_color_manual(name = "", values = c("Years to bearing fruit" = "palegreen2", "Years bearing fruit" = "green3", "Years to removal" = "darkgreen", "Intermediate age" = "grey50")) +
   
   # Axis labels
-  xlab("Orchard age") +
+  xlab("") +
   ylab("Agricultural ET (mm/month)") + 
   theme_bw() + 
   theme(legend.position = c(.8, .25), 
@@ -232,7 +232,7 @@ for (crop in c("Deciduous fruits and nuts", "Vineyards", "Citrus and subtropical
     scale_color_manual(name = "", values = c("Years to bearing fruit" = "palegreen2", "Years bearing fruit" = "green3", "Years to removal" = "darkgreen", "Intermediate age" = "grey50")) +
     
     # Axis labels
-    xlab("Orchard age") +
+    xlab("") +
     ylab("Agricultural ET (mm/month)") + 
     theme_bw() + 
     theme(legend.position = c(.8, .25), 
