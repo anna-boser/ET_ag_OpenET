@@ -37,7 +37,8 @@ if (years_ts){
 }
 
 # save this
-fwrite(data, here(experiment_path, "agriculture_tidy.csv"))
+fwrite(data, here(experiment_path, "agriculture_tidy.csv"), append = FALSE)
+# data <- fread(here(experiment_path, "agriculture_tidy.csv"))
 
 # save a version with only fallow lands
 fallow <- filter(data, cropnames %in% c("Unclassified fallow", "Idle"))
