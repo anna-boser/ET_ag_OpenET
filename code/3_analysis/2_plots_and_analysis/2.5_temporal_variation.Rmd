@@ -277,6 +277,9 @@ CS <- CS %>%
   group_by(month, COUNTY_NAME) %>% 
   summarize(Pcp = mean(Pcp)*scalar)
 
+avg_yearly_pcp <- mean(CS$Pcp)*12
+write(paste("Average yearly precipitation according to CalSIMETAW:", avg_yearly_pcp),file=report,append=TRUE)
+
 CS$ET <- CS$Pcp
 CS$type <- "Pcp"
 CS$min <- NA
