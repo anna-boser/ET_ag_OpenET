@@ -9,7 +9,6 @@
 import pickle
 from pyprojroot import here
 import matplotlib.pyplot as plt
-import numpy as np
 
 experiment_name = "fallow0.05,2_4-18_gb" # change as needed
 experiment_path = str(here("data/4_for_analysis/ML_outputs/experiments")) + "/" + experiment_name
@@ -18,8 +17,9 @@ path = experiment_path+"/trained_model_train.pkl"
 with open(path, 'rb') as f:
     model = pickle.load(f)
 
-# these are grabbed from the experiments.py file from that experiment -- change as needed
-features=["x", "y", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"]
+# these are grabbed from the experiments.py file from that experiment.
+# x and y are replaced with Longitude and Latitude
+features=["Longitude", "Latitude", "Elevation", "Slope", "Soil", "Aspect", "TWI", "PET"]
 
 importances = model.feature_importances_
 
@@ -30,15 +30,20 @@ month_importance = sum(importances[len(features):len(features)+12])
 year_importance = sum(importances[len(features)+12:])
 
 feature_names = features + ["Month", "Year"]
-importances = list(feature_importances) + [month_importance] + [year_importance]
+importances = list(feature_importances*100) + [month_importance*100] + [year_importance*100]
 
 for feature, importance in zip(feature_names, importances):
     print(f'{feature}: {importance}')
 
 # Plot
 plt.figure(figsize=(10, 6))
-plt.title("Feature importances")
+
+# Ensure all font sizes are at least 12pt
+plt.rcParams.update({'font.size': 12})
+
 plt.bar(feature_names, importances, align="center")
 plt.xticks(rotation=45)
 plt.tight_layout()
-plt.savefig(experiment_path+'/feature_importance.png')
+plt.xlabel('Features', fontsize=14)  # X-axis label with font size 12
+plt.ylabel('Importance (%)', fontsize=14)  # Y-axis label with font size 12
+plt.savefig(experiment_path+'/feature_importance.png', bbox_inches='tight')
