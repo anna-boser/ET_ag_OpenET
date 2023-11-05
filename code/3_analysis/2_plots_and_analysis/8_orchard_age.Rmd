@@ -22,7 +22,7 @@ source(here("file_paths.R"))
 source(here("helper_functions.R"))
 ```
 
-# read in data; only keep YP or orchards (vineyards; citrus & subtropical; deciduous fruits & nuts)
+# read in data; only keep YP or orchards (citrus & subtropical; deciduous fruits & nuts). Don't include vineyards because we find no age effect. 
 ```{r}
 experiment_name <- "fallow0.05,2_4-18_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
@@ -37,7 +37,7 @@ if (file.exists(report)) {file.remove(report)} # start fresh every time you rend
 ## clean data
 ```{r}
 data <- filter(data, coverage_fraction>.5)
-data <- filter(data, cropnames %in% c("Young Perennial", "Deciduous fruits and nuts", "Vineyards", "Citrus and subtropical"))
+data <- filter(data, cropnames %in% c("Young Perennial", "Deciduous fruits and nuts", "Citrus and subtropical")) # don't include vineyards because we previously found no effect
 ```
 
 ```{r}
@@ -88,7 +88,7 @@ orchards <- merge(orchards, max_YP_year, by = c("loc"), all.x = TRUE, all.y = FA
 
 # first year that this pixel is not an orchard -- does not necessarily need to be YP since it could be replaced by anything
 min_YP_year <- crop_data %>%
-  filter(!(cropnames %in% c("Young Perennial", "Deciduous fruits and nuts", "Vineyards", "Citrus and subtropical"))) %>%
+  filter(!(cropnames %in% c("Young Perennial", "Deciduous fruits and nuts", "Citrus and subtropical"))) %>%
   group_by(loc) %>%
   mutate(min_YP_year = min(year)) %>%
   filter(min_YP_year == year) %>% # only one observation per pixel
@@ -198,7 +198,7 @@ ggsave(here(experiment_path, paste0("Figure_S_Orchard_age.pdf")),
 
 ```{r}
 
-for (crop in c("Deciduous fruits and nuts", "Vineyards", "Citrus and subtropical")){
+for (crop in c("Deciduous fruits and nuts", "Citrus and subtropical")){
   
   age_df_filt <- filter(age_df, cropnames %in% c(crop, "Young Perennial"))
 
