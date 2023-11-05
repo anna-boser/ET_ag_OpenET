@@ -1,4 +1,6 @@
 # clean and split the fallow dataset into train, val, and test
+# record how many pixels are in each split
+# and how many groupings are in each split
 
 library(here)
 library(raster)
@@ -57,17 +59,19 @@ clean_and_split <- function(remove_percent, cluster_size, cdl = FALSE){
     return(cv_fold)
   }
 
-  filtered_fallow$cluster <- mapply(assign_cluster, filtered_fallow$x, filtered_fallow$y, cluster_size) #1km clusters
+# create clusters of specified size
+  filtered_fallow$cluster <- mapply(assign_cluster, filtered_fallow$x, filtered_fallow$y, cluster_size) 
 
   # 60-10-30 train-val-test split 
   clusters <- unique(filtered_fallow$cluster)
+  no_total_clusters <- length(clusters)
 
   # training
-  training_cs <- sample(clusters, size = length(clusters)*.6, replace = FALSE)
-  clusters <- clusters[!(clusters %in% training_cs)]
+  training_cs <- sample(clusters, size = no_total_clusters*.6, replace = FALSE)
 
   # val
-  val_cs <- sample(clusters, size = length(clusters)*.25, replace = FALSE) # 25% of the remaining 40% is 10%
+  clusters <- clusters[!(clusters %in% training_cs)] # remove those already in training split
+  val_cs <- sample(clusters, size = no_total_clusters*.1, replace = FALSE) # 10% of the original amount
 
   # test
   test_cs <- clusters[!(clusters %in% val_cs)]
@@ -82,11 +86,20 @@ clean_and_split <- function(remove_percent, cluster_size, cdl = FALSE){
     fwrite(train, here(training_data_path, paste0("fallow", remove_percent, ",", cluster_size, ".csv")), append=FALSE)
     fwrite(val, here(val_data_path, paste0("fallow", remove_percent, ",", cluster_size, "_val.csv")), append=FALSE)
     fwrite(test, here(test_data_path, paste0("fallow", remove_percent, ",", cluster_size, "_test.csv")), append=FALSE)
+    report <- here(training_data_path, paste0("fallow", remove_percent, ",", cluster_size, "_report.txt"))
   } else {
     fwrite(train, here(training_data_path, paste0("fallow_cdl", remove_percent, ",", cluster_size, ".csv")), append=FALSE)
     fwrite(val, here(val_data_path, paste0("fallow_cdl", remove_percent, ",", cluster_size, "_val.csv")), append=FALSE)
     fwrite(test, here(test_data_path, paste0("fallow_cdl", remove_percent, ",", cluster_size, "_test.csv")), append=FALSE)
+    report <- here(training_data_path, paste0("fallow_cdl", remove_percent, ",", cluster_size, "_report.txt"))
   }
+  write(paste("Number of all clusters:", no_total_clusters),file=report,append=TRUE)
+  write(paste("Number of training clusters:", length(training_cs)),file=report,append=TRUE)
+  write(paste("Number of val clusters:", length(val_cs)),file=report,append=TRUE)
+  write(paste("Number of test clusters:", length(test_cs)),file=report,append=TRUE)
+  write(paste("Number of training pixels:", nrow(train)),file=report,append=TRUE)
+  write(paste("Number of val pixels:", nrow(val)),file=report,append=TRUE)
+  write(paste("Number of test pixels:", nrow(test)),file=report,append=TRUE)
 }
 
 clean_and_split(.05, 2) # DWR fallow lands, remove 5%
