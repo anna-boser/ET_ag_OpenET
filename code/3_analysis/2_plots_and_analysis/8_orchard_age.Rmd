@@ -141,6 +141,10 @@ YP$age <- YP$age
 
 unique(YP$age)
 
+YP <- filter(YP, age >= -2) # get rid of -3 and -4 -- these are not meaningful values really because orchards usually start fruiting after 2 years. Orchards were probably replaced or improperly remotely sensed. 
+
+unique(YP$age)
+
 ```
 
 
@@ -181,7 +185,7 @@ ggplot(ET_df) +
   scale_color_manual(name = "", values = c("Years to bearing fruit" = "palegreen2", "Years bearing fruit" = "green3", "Years to removal" = "darkgreen", "Intermediate age" = "grey50")) +
   
   # Axis labels
-  xlab("") +
+  xlab("Young orchard                                                                                                       Old orchard") +
   ylab("Agricultural ET (mm/month)") + 
   theme_bw() + 
   theme(legend.position = c(.8, .25), 
@@ -200,7 +204,7 @@ ggsave(here(experiment_path, paste0("Figure_S_Orchard_age.pdf")),
 
 for (crop in c("Deciduous fruits and nuts", "Citrus and subtropical")){
   
-  age_df_filt <- filter(age_df, cropnames %in% c(crop, "Young Perennial"))
+  age_df_filt <- filter(age_df, cropnames %in% c(crop, "Young Perennial")) # note that these are all young perennials, including ones that did not turn into the specified crop
 
   ET_c <- felm(ag_ET~age-1 | 0  | 0 | cluster, age_df_filt) # -1 means no intercept
   ET_df <- df_from_felm(ET_c, name_length = 4, var="age")
@@ -220,7 +224,7 @@ for (crop in c("Deciduous fruits and nuts", "Citrus and subtropical")){
   
   plot <- ggplot(ET_df) + 
     # Color the points by category
-    geom_pointrange(aes(x = factor(age, levels = c("-4", "-3", "-2", "-1", "1", "2", "3", "4", "5", "Intermediate", " -4", " -3", " -2", " -1")), y = ET, ymin = min, ymax = max, color = category)) +
+    geom_pointrange(aes(x = factor(age, levels = c("-2", "-1", "1", "2", "3", "4", "5", "Intermediate", " -4", " -3", " -2", " -1")), y = ET, ymin = min, ymax = max, color = category)) +
     
     # Add a horizontal line for the "Intermediate age" mean
     geom_hline(aes(yintercept = all_others_data$ET), color = "grey50", linetype="dashed") +
@@ -232,7 +236,7 @@ for (crop in c("Deciduous fruits and nuts", "Citrus and subtropical")){
     scale_color_manual(name = "", values = c("Years to bearing fruit" = "palegreen2", "Years bearing fruit" = "green3", "Years to removal" = "darkgreen", "Intermediate age" = "grey50")) +
     
     # Axis labels
-    xlab("") +
+    xlab("Young orchard                                                                                                       Old orchard") +
     ylab("Agricultural ET (mm/month)") + 
     theme_bw() + 
     theme(legend.position = c(.8, .25), 
@@ -241,11 +245,11 @@ for (crop in c("Deciduous fruits and nuts", "Citrus and subtropical")){
   
   print(plot)
   
-  ggsave(here(experiment_path, paste0("Figure_S_", crop, ".pdf")), 
-         plot = plot,
-         width = 17.8,
-         height = 11.1,
-         units = "cm")
+  # ggsave(here(experiment_path, paste0("Figure_S_", crop, ".pdf")), 
+  #        plot = plot,
+  #        width = 17.8,
+  #        height = 11.1,
+  #        units = "cm")
 }
 ```
 
