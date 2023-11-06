@@ -174,7 +174,7 @@ filter(bardata, type == "ag_ET", cropnames != "Young Perennial") %>%
   # geom_linerange(data = filter(bardata, type == "ET", cropnames != "Young Perennial"), aes(ymax = min, ymin = max), size=1.1, color = "navyblue") + 
   geom_linerange(aes(ymax = min, ymin = max), size=1.1, color = "green4") + 
   ylab("mm/year") + 
-  theme_classic() + 
+  theme_bw() + 
   labs(fill='') + 
   # ylim(c(-35, 165)) + 
   theme(axis.text.x = element_text(angle = 30, hjust=1, size=11), 
@@ -228,7 +228,7 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(cropnames, ET))) +
   geom_linerange(data = filter(bardata, type == "ET"), aes(ymax = min, ymin = max), color = "navyblue") +
   geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "green4") +
   ylab("mm/year") +
-  theme_classic() +
+  theme_bw() +
   labs(fill='') +
   theme(axis.text.x = element_text(angle = 30, hjust=1),
         axis.title.x=element_blank(),
@@ -244,7 +244,7 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(cropnames, ET))) +
   geom_boxplot(data=data, aes(y=ag_ET), outlier.size = .5, outlier.alpha = .002) + 
   geom_col(aes(y = ET), fill = "green4", alpha = 0.6) + 
   geom_linerange(aes(ymax = min, ymin = max), color = "green4") +
-  theme_classic() + 
+  theme_bw() + 
   labs(fill='') + 
   ylab("Agricultural ET (mm/year)") + 
   theme(axis.text.x = element_text(angle = 30, hjust=1), 
@@ -340,7 +340,7 @@ ggplot(filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(
   # geom_linerange(data = filter(bardata, type == "ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), size = 1, color = "navyblue") + 
   geom_linerange(data = filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), size = 1, color = "green4") + 
   ylab("mm/year") + 
-  theme_classic() + 
+  theme_bw() + 
   labs(fill='') + 
   # ylim(c(-45, 175)) + 
   theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.5), 
@@ -389,7 +389,7 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(subcropnames, ET))) +
   geom_linerange(data = filter(bardata, type == "ET"), aes(ymax = min, ymin = max), color = "navyblue") + 
   geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "green4") + 
   ylab("mm/year") + 
-  theme_classic() + 
+  theme_bw() + 
   labs(fill='') + 
   theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.5), 
         axis.title.x=element_blank(), 
@@ -406,7 +406,7 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(subcropnames, ET))) +
   geom_boxplot(data=data, aes(y=ag_ET), outlier.size = .5, outlier.alpha = .002) + 
   geom_col(aes(y = ET), fill = "green4", alpha = 0.6) + 
   geom_linerange(aes(ymax = min, ymin = max), color = "green4") +
-  theme_classic() + 
+  theme_bw() + 
   labs(fill='') + 
   ylab("Agricultural ET (mm/year)") + 
   theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.5), 
@@ -422,7 +422,7 @@ ggplot(filter(bardata, type == "ET"), aes(x = reorder(subcropnames, ET))) +
   geom_boxplot(data=data, aes(y=ET), outlier.size = .5, outlier.alpha = .002) + 
   geom_col(aes(y = ET), fill = "navyblue", alpha = 0.6) + 
   geom_linerange(aes(ymax = min, ymin = max), color = "navyblue") +
-  theme_classic() + 
+  theme_bw() + 
   labs(fill='') + 
   ylab("Observed ET (mm/year)") + 
   theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.5), 
