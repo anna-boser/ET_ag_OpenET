@@ -266,6 +266,52 @@ counties <- unique(data$NAME[data$NAME %in% counties])
 bardata <- rbindlist(lapply(counties, make_df, "NAME"))
 bardata$COUNTY_NAME <- bardata$NAME
 
+bardata$month <- as.numeric(bardata$month)
+
+ggplot(bardata, aes(x = month)) +
+  geom_line(aes(y = ET, color = type, group = type)) +
+  geom_ribbon(aes(ymin = min, ymax = max, fill = type, group = type), alpha = 0.2) +
+  ylab("mm/month") +
+  xlab("Month") +
+  theme_bw() +
+  scale_x_continuous(breaks = c(1:12)) +
+  scale_color_manual(
+    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
+    breaks = c("ag_ET", "ET_pred", "ET"),
+    labels = c("Agricultural ET", "Natural ET", "Total ET"),
+    name = ""
+  ) +
+  scale_fill_manual(
+    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
+    breaks = c("ag_ET", "ET_pred", "ET"),
+    labels = c("Agricultural ET", "Natural ET", "Total ET"),
+    name = ""
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(size = 1.5)),
+    fill = guide_legend(override.aes = list(size = 0.5))
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 30, hjust = 1, size = 11),
+    axis.title.x = element_text(size = 11),
+    axis.text.y = element_text(size = 11),
+    axis.title.y = element_text(size = 11),
+    legend.position = "top",
+    legend.direction = "horizontal",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 11)
+  ) + 
+  facet_wrap(vars(NAME))
+
+ggsave(here(experiment_path, "Figure_1.5_counties.pdf"), 
+       width = 17.8,
+       height = 11.1,
+       units = "cm")
+```
+
+```{r}
+# plot the dataset with the different facets by county with CalSIMETAW.  
+
 # add CalSIMETAW precip
 scalar = 1.2 # mm/month to cm/year
 
@@ -291,10 +337,6 @@ bardata <- rbind(
   subset(bardata, select = common_cols)
 )
 bardata$type <- as.factor(bardata$type)
-
-# bardata <- merge(CS, bardata, by = c("COUNTY_NAME", "month"))
-
-# plot the dataset with the different facets by crop. 
 
 ggplot(bardata, aes(x = month)) +
   geom_line(aes(y = ET, color = type, group = type)) +
@@ -331,11 +373,12 @@ ggplot(bardata, aes(x = month)) +
   ) + 
   facet_wrap(vars(COUNTY_NAME))
 
-ggsave(here(experiment_path, "Figure_1.5_counties.pdf"), 
+ggsave(here(experiment_path, "Figure_1.5_counties_pcp.pdf"), 
        width = 17.8,
        height = 11.1,
        units = "cm")
 ```
+
 
 ```{r}
 # break down by sacramento and san joaquin valleys
