@@ -85,7 +85,7 @@ ggplot(vario_ET2) +
   geom_line(aes(x = dist, y = gamma, color = type)) + 
   geom_point(aes(x = dist, y = gamma, color = type)) + 
   scale_color_manual(values=c("seagreen", "navyblue")) + 
-  theme_classic() + 
+  theme_bw() + 
   theme(legend.position = c(.2, .85), 
         legend.title=element_blank()) + 
   xlab("Distance (km)") + 
