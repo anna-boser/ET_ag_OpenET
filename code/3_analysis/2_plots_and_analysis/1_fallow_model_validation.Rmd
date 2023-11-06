@@ -71,7 +71,7 @@ MAE <- mean(abs(data_year$ET_pred - data_year$ET), na.rm=TRUE)
 ggplot(data_year) +
   geom_abline(intercept=0,slope=1, color="red") + 
   geom_jitter(aes(x=ET_pred, y=ET), alpha=0.2, size =.1) + 
-  theme_classic() + 
+  theme_bw() + 
   geom_smooth(aes(x=ET_pred, y=ET), method = lm, se = TRUE) +
   # annotate("text", x=3, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
   coord_fixed() + 
@@ -189,18 +189,21 @@ ts_from_felm <- function(input_lm){
 }
 
 ET_df <- ts_from_felm(felm(ET~month_f-1 | 0 | 0 | cluster+year, data))
-ET_df$type = "Observed ET"
+ET_df$type = "Observed total ET"
 ET_pred_df <- ts_from_felm(felm(ET_pred~month_f-1 | 0 | 0 | cluster+year, data))
 ET_pred_df$type = "Predicted natrually-occurring ET"
 ts <- rbind(ET_df, ET_pred_df)
 
 ggplot(ts, aes(x = month)) + 
-  geom_line(aes(y = ET, col = type)) + 
+  geom_line(aes(y = ET, col = type), size = .25) + # make the lines smaller so that they overlap less
   geom_ribbon(aes(ymax = min, ymin = max, fill = type), alpha = .2) + 
+  scale_color_viridis(discrete = TRUE) +  # Colorblind-friendly palette for lines
+  scale_fill_viridis(discrete = TRUE) +   # Colorblind-friendly palette for ribbons
   ylab("ET (mm/year)") + 
   xlab("Month") + 
   labs(color=NULL, fill=NULL) + 
-  theme_classic()
+  theme_bw() + 
+  theme(legend.position = "top", legend.direction = "horizontal") # move legend to the top to allow more space for the plot
 
 ggsave(here(experiment_path, "Figure_S4.pdf"), 
        width = 17.8,
