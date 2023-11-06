@@ -172,6 +172,9 @@ to_convert = names(irrigation)[c(11:14)] #the names of the columns that are in t
 
 irrigation <- mutate(irrigation, across(to_convert, conversion))
 
+# get a kg/year variable to make the plot more intuitive
+irrigation$kg.year = irrigation$Irrigation..Crop.total.self.supplied.withdrawals.for.crops..fresh..in.Mgal.d*365
+
 # add a mm/day and mm/year variable
 # keep in mind the column names no longer reflect the true units
 irrigation$mm.day <- irrigation$Irrigation..Crop.total.self.supplied.withdrawals.for.crops..fresh..in.Mgal.d/irrigation$Irrigation..Crop.total.irrigation.for.crops..in.thousand.acres
@@ -190,16 +193,16 @@ irrigation$sprinkler <- irrigation$Irrigation..Crop.sprinkler.irrigation.for.cro
 if (is.na(irr_year)){
   # take the average irrigation over different years to simplify
   irrigation_avg <- irrigation %>% 
-  group_by(NAME) %>% 
-  summarize(mm.year = mean(mm.year),
-            mm.day = mean(mm.day),
-            flood = mean(flood), 
-            drip = mean(drip), 
-            sprinkler = mean(sprinkler))
+    group_by(NAME) %>% 
+    summarize(mm.year = mean(mm.year),
+              mm.day = mean(mm.day),
+              flood = mean(flood), 
+              drip = mean(drip), 
+              sprinkler = mean(sprinkler))
 } else {
   # or just use one year
-irrigation_avg <- irrigation %>% filter(irryear == irr_year)
-irrigation_avg$year <- NULL
+  irrigation_avg <- irrigation %>% filter(irryear == irr_year)
+  irrigation_avg$year <- NULL
 }
 
 ```
@@ -242,13 +245,13 @@ counties_irrigation <- base::merge(counties, efficiency_df, by = "NAME")
 ### Plot 1: irrigation use and agricultural water consumption
 ```{r, eval = TRUE}
 plotted_datasets <- ggplot() + 
-  geom_sf(data = counties_irrigation, aes(fill = mm.year/10), color=alpha("red",0)) + 
-  scale_fill_gradient2(name="Irrigation (cm/year)", low = "red", mid = "white", high = "deepskyblue4") + 
+  geom_sf(data = counties_irrigation, aes(fill = kg.year), color=alpha("red",0)) + 
+  scale_fill_gradient2(name="Irrigation (kq/year)", low = "red", mid = "white", high = "deepskyblue4") + 
   # geom_sf(data = counties_irrigation, fill=alpha("red",0), color=alpha("grey64")) + 
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   new_scale_fill() +
-  geom_raster(data = data[sample(nrow(data), size = nrow(data), replace = FALSE),], aes(x=x, y=y, fill=ag_ET_year/10), alpha=0.75) +
-  scale_fill_gradientn(name="Agricultural ET (cm/year)", colours = c("darkgoldenrod2", "khaki1", "lightgreen",  "deepskyblue","mediumblue", "navyblue", "midnightblue", "black"), limits = c(-39.1, 234.6), breaks = seq(0, 200, by = 100)) +
+  geom_raster(data = data[sample(nrow(data), size = nrow(data), replace = FALSE),], aes(x=x, y=y, fill=ag_ET_year), alpha=0.75) +
+  scale_fill_gradientn(name="Agricultural ET (mm/year)", colours = c("darkgoldenrod2", "khaki1", "lightgreen",  "deepskyblue","mediumblue", "navyblue", "midnightblue", "black"), limits = c(-391, 2346), breaks = seq(0, 2000, by = 1000)) +
   theme_void() + 
   annotation_scale() + 
   xlim(c(minlong, maxlong)) + 
