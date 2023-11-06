@@ -63,8 +63,8 @@ data$subcropnames <- ifelse(data$subcropnames %in% c("Potatoes", "Potato or Swee
 # create clusters based on location and year. Function creates clusters of size dist km. 
 data$cluster <- mapply(assign_cluster, data$x, data$y, 75)
 
-# scale to cm/year instead of mm/month
-scalar = 1.2 # 1.2 turns mm/month to cm/year
+# scale to mm/year instead of mm/month
+scalar = 12 # turns mm/month to mm/year
 data <- scale(data, scalar)
 
 # control for variation across years
@@ -173,7 +173,7 @@ filter(bardata, type == "ag_ET", cropnames != "Young Perennial") %>%
   scale_color_manual(values=c("black"), labels = c("Observed ET")) + 
   # geom_linerange(data = filter(bardata, type == "ET", cropnames != "Young Perennial"), aes(ymax = min, ymin = max), size=1.1, color = "navyblue") + 
   geom_linerange(aes(ymax = min, ymin = max), size=1.1, color = "green4") + 
-  ylab("cm/year") + 
+  ylab("mm/year") + 
   theme_classic() + 
   labs(fill='') + 
   # ylim(c(-35, 165)) + 
@@ -227,7 +227,7 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(cropnames, ET))) +
   scale_color_manual(values=c("navyblue"), labels = c("Observed ET")) +
   geom_linerange(data = filter(bardata, type == "ET"), aes(ymax = min, ymin = max), color = "navyblue") +
   geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "green4") +
-  ylab("cm/year") +
+  ylab("mm/year") +
   theme_classic() +
   labs(fill='') +
   theme(axis.text.x = element_text(angle = 30, hjust=1),
@@ -246,7 +246,7 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(cropnames, ET))) +
   geom_linerange(aes(ymax = min, ymin = max), color = "green4") +
   theme_classic() + 
   labs(fill='') + 
-  ylab("Agricultural ET (cm/year)") + 
+  ylab("Agricultural ET (mm/year)") + 
   theme(axis.text.x = element_text(angle = 30, hjust=1), 
         axis.title.x=element_blank(), 
         axis.ticks.x=element_blank(), 
@@ -339,7 +339,7 @@ ggplot(filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(
   scale_color_manual(values=c("black"), labels = c("Observed ET")) + 
   # geom_linerange(data = filter(bardata, type == "ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), size = 1, color = "navyblue") + 
   geom_linerange(data = filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), size = 1, color = "green4") + 
-  ylab("cm/year") + 
+  ylab("mm/year") + 
   theme_classic() + 
   labs(fill='') + 
   # ylim(c(-45, 175)) + 
@@ -388,7 +388,7 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(subcropnames, ET))) +
   scale_color_manual(values=c("navyblue"), labels = c("Observed ET")) + 
   geom_linerange(data = filter(bardata, type == "ET"), aes(ymax = min, ymin = max), color = "navyblue") + 
   geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "green4") + 
-  ylab("cm/year") + 
+  ylab("mm/year") + 
   theme_classic() + 
   labs(fill='') + 
   theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.5), 
@@ -408,7 +408,7 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(subcropnames, ET))) +
   geom_linerange(aes(ymax = min, ymin = max), color = "green4") +
   theme_classic() + 
   labs(fill='') + 
-  ylab("Agricultural ET (cm/year)") + 
+  ylab("Agricultural ET (mm/year)") + 
   theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.5), 
         axis.title.x=element_blank(), 
         # axis.ticks.x=element_blank(), 
@@ -424,7 +424,7 @@ ggplot(filter(bardata, type == "ET"), aes(x = reorder(subcropnames, ET))) +
   geom_linerange(aes(ymax = min, ymin = max), color = "navyblue") +
   theme_classic() + 
   labs(fill='') + 
-  ylab("Observed ET (cm/year)") + 
+  ylab("Observed ET (mm/year)") + 
   theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.5), 
         axis.title.x=element_blank(), 
         # axis.ticks.x=element_blank(), 
