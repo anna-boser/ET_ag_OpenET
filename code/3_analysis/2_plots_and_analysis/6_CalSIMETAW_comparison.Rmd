@@ -37,12 +37,12 @@ c <- fread(here(experiment_path, "time_series_by_crop.csv"))
 sc <- fread(here(experiment_path, "time_series_by_subcrop.csv"))
 
 ggplot(c) + 
-  geom_line(aes(x = month, y = ET, color = "Observed ET")) + 
+  geom_line(aes(x = month, y = ET, color = "Total ET")) + 
   geom_line(aes(x = month, y = ET_pred, color = "Simulated natural ET")) + 
   facet_wrap(vars(cropnames))
 
 ggplot(sc) + 
-  geom_line(aes(x = month, y = ET, color = "Observed ET")) + 
+  geom_line(aes(x = month, y = ET, color = "Total ET")) + 
   geom_line(aes(x = month, y = ET_pred, color = "Simulated natural ET")) + 
   facet_wrap(vars(subcropnames))
 ```
@@ -99,7 +99,7 @@ df <- fread(here(experiment_path, "agriculture_monthly_county_crop.csv"))
 df <- filter(df, cropnames %in% CS$cropnames)
 CS <- merge(CS, df, by = c("cropnames", "COUNTY_NAME", "month"))
 
-scalar = 1.2 # mm/month to cm/year
+scalar = 12 # mm/month to mm/year
 # average by CalSIMETAW county and crop type.
 scatter_data <- CS %>% 
   group_by(COUNTY_NAME, cropnames) %>% 
@@ -174,8 +174,8 @@ ggplot(fin_data) +
   geom_smooth(aes(x = ET_ET_pred, y = CalSIMETAW), method="lm") + 
   facet_grid(cols = vars(method), labeller = labeller(method = new.labs)) + 
   theme_classic() + 
-  ylab("Modeled Agricultural ET (cm/year)") + 
-  xlab("Empirical Agricultural ET (cm/year)") + 
+  ylab("CalSIMETAW Agricultural ET (mm/year)") + 
+  xlab("Empirical Agricultural ET (mm/year)") + 
   coord_fixed() + 
   xlim(c(min(fin_data$CalSIMETAW, fin_data$ET_ET_pred), max(fin_data$CalSIMETAW, fin_data$ET_ET_pred))) +
   ylim(c(min(fin_data$CalSIMETAW, fin_data$ET_ET_pred), max(fin_data$CalSIMETAW, fin_data$ET_ET_pred))) +

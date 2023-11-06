@@ -76,7 +76,7 @@ sample$y <- (sample$y - min(sample$y))*111
 vario_ET <- variogram(ET~1, data=sample, locations= ~x+y, cutoff= 100) 
 vario_ag_ET <- variogram(ag_ET~1, data=sample, locations= ~x+y, cutoff= 100) 
 
-vario_ET$type = "Observed ET"
+vario_ET$type = "Total ET"
 vario_ag_ET$type = "Agricultural ET"
 
 vario_ET2 <- rbind(vario_ET, vario_ag_ET)
@@ -125,7 +125,7 @@ hist_data <- hist_data_full[sample(1:nrow(hist_data_full), 20000, rep=FALSE),]
 
 ggplot(hist_data) + 
   geom_density(aes(x=ET, fill = type), lwd = 0, alpha = .4) + 
-  scale_fill_manual(name="", labels=c("Observed ET (on agricultural lands)", "Simulated fallow ET (on agricultural lands)", "Agricultural ET (on agricultural lands)", "Fallow ET (on fallow lands)"), values=c("navyblue", "darkgoldenrod4", "seagreen", "grey")) +
+  scale_fill_manual(name="", labels=c("Total ET (on agricultural lands)", "Simulated fallow ET (on agricultural lands)", "Agricultural ET (on agricultural lands)", "Fallow ET (on fallow lands)"), values=c("navyblue", "darkgoldenrod4", "seagreen", "grey")) +
   theme_classic() +  
   theme(legend.position = c(0.75, 0.8),
         axis.title.y=element_blank(),
@@ -163,7 +163,7 @@ scalar = 12 # mm/month to mm/year
 # full_data <- data
 # data <- full_data[sample(nrow(full_data), size = 100000, replace = FALSE),] # subset for fast testing
 
-new.labs <- c("Observed ET", "Naturally-occurring ET", "Agricultural ET")
+new.labs <- c("Total ET", "Naturally-occurring ET", "Agricultural ET")
 names(new.labs) <- c("ET", "ET_pred", "ag_ET")
 
 ggplot() + 

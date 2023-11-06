@@ -170,7 +170,7 @@ filter(bardata, type == "ag_ET", cropnames != "Young Perennial") %>%
   geom_col(data = filter(bardata, type != "ET", cropnames != "Young Perennial"), aes(y = ET, fill = type), alpha = .6) +
   scale_fill_manual(values=c(ag_ET="green4", ET_pred="darkgoldenrod"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Naturally-occurring ET")) + 
   geom_col(data = filter(bardata, type == "ET", cropnames != "Young Perennial"), aes(y = ET, color = type), size=.3, alpha = 0) +
-  scale_color_manual(values=c("black"), labels = c("Observed ET")) + 
+  scale_color_manual(values=c("black"), labels = c("Total ET")) + 
   # geom_linerange(data = filter(bardata, type == "ET", cropnames != "Young Perennial"), aes(ymax = min, ymin = max), size=1.1, color = "navyblue") + 
   geom_linerange(aes(ymax = min, ymin = max), size=1.1, color = "green4") + 
   ylab("mm/year") + 
@@ -224,7 +224,7 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(cropnames, ET))) +
   geom_col(data = filter(bardata, type != "ET"), aes(y = ET, fill = type), alpha = .6) +
   scale_fill_manual(values=c(ag_ET="green4", ET_pred="darkgoldenrod"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Simulated natural ET")) +
   geom_col(data = filter(bardata, type == "ET"), aes(y = ET, color = type), alpha = 0) +
-  scale_color_manual(values=c("navyblue"), labels = c("Observed ET")) +
+  scale_color_manual(values=c("navyblue"), labels = c("Total ET")) +
   geom_linerange(data = filter(bardata, type == "ET"), aes(ymax = min, ymin = max), color = "navyblue") +
   geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "green4") +
   ylab("mm/year") +
@@ -336,7 +336,7 @@ ggplot(filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(
   geom_col(data = filter(bardata, type != "ET", subcropnames != "Young Perennial"), aes(y = ET, fill = type), alpha = .6) +
   scale_fill_manual(values=c(ag_ET="green4", ET_pred="darkgoldenrod"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Naturally-occurring ET")) + 
   geom_col(data = filter(bardata, type == "ET", subcropnames != "Young Perennial"), aes(y = ET, color = type), alpha = 0, size = 0.3) +
-  scale_color_manual(values=c("black"), labels = c("Observed ET")) + 
+  scale_color_manual(values=c("black"), labels = c("Total ET")) + 
   # geom_linerange(data = filter(bardata, type == "ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), size = 1, color = "navyblue") + 
   geom_linerange(data = filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), size = 1, color = "green4") + 
   ylab("mm/year") + 
@@ -385,7 +385,7 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(subcropnames, ET))) +
   geom_col(data = filter(bardata, type != "ET"), aes(y = ET, fill = type), alpha = .6) +
   scale_fill_manual(values=c(ag_ET="green4", ET_pred="darkgoldenrod"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Simulated natural ET")) + 
   geom_col(data = filter(bardata, type == "ET"), aes(y = ET, color = type), alpha = 0) +
-  scale_color_manual(values=c("navyblue"), labels = c("Observed ET")) + 
+  scale_color_manual(values=c("navyblue"), labels = c("Total ET")) + 
   geom_linerange(data = filter(bardata, type == "ET"), aes(ymax = min, ymin = max), color = "navyblue") + 
   geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "green4") + 
   ylab("mm/year") + 
@@ -416,7 +416,7 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(subcropnames, ET))) +
         legend.direction="horizontal", 
         legend.title=element_blank()) 
 
-# observed ET 
+# Total ET 
 ggplot(filter(bardata, type == "ET"), aes(x = reorder(subcropnames, ET))) + 
   geom_linerange(aes(ymax = min, ymin = max), color = "navyblue") +
   geom_boxplot(data=data, aes(y=ET), outlier.size = .5, outlier.alpha = .002) + 
@@ -424,7 +424,7 @@ ggplot(filter(bardata, type == "ET"), aes(x = reorder(subcropnames, ET))) +
   geom_linerange(aes(ymax = min, ymin = max), color = "navyblue") +
   theme_bw() + 
   labs(fill='') + 
-  ylab("Observed ET (mm/year)") + 
+  ylab("Total ET (mm/year)") + 
   theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.5), 
         axis.title.x=element_blank(), 
         # axis.ticks.x=element_blank(), 
