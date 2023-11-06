@@ -189,9 +189,9 @@ ts_from_felm <- function(input_lm){
 }
 
 ET_df <- ts_from_felm(felm(ET~month_f-1 | 0 | 0 | cluster+year, data))
-ET_df$type = "Observed total ET"
+ET_df$type = "Observed ET"
 ET_pred_df <- ts_from_felm(felm(ET_pred~month_f-1 | 0 | 0 | cluster+year, data))
-ET_pred_df$type = "Predicted natrually-occurring ET"
+ET_pred_df$type = "Predicted ET"
 ts <- rbind(ET_df, ET_pred_df)
 
 ggplot(ts, aes(x = month)) + 
