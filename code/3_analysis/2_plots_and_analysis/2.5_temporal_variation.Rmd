@@ -313,7 +313,6 @@ ggsave(here(experiment_path, "Figure_1.5_counties.pdf"),
 # plot the dataset with the different facets by county with CalSIMETAW.  
 
 # add CalSIMETAW precip
-scalar = 1.2 # mm/month to cm/year
 
 CS <- fread(calsimetaw_loc)
 CS <- filter(CS, COUNTY_NAME %in% counties)
@@ -321,10 +320,10 @@ CS$Date <- as.Date(CS$Date)
 CS$month <- month(CS$Date)
 CS <- CS %>% 
   group_by(month, COUNTY_NAME) %>% 
-  summarize(Pcp = mean(Pcp)*scalar)
+  summarize(Pcp = mean(Pcp))
 
 avg_yearly_pcp <- mean(CS$Pcp)*12
-write(paste("Average yearly precipitation according to CalSIMETAW:", avg_yearly_pcp),file=report,append=TRUE)
+write(paste("Average yearly precipitation according to CalSIMETAW (mm/year):", avg_yearly_pcp),file=report,append=TRUE)
 
 CS$ET <- CS$Pcp
 CS$type <- "Pcp"

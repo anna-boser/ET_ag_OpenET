@@ -159,7 +159,7 @@ counties <- st_read(counties_loc) %>% filter(STATEFP == "06") %>% st_transform(s
 ```
 
 ```{r}
-scalar = 1.2 # mm/month to cm/year
+scalar = 12 # mm/month to mm/year
 # full_data <- data
 # data <- full_data[sample(nrow(full_data), size = 100000, replace = FALSE),] # subset for fast testing
 
@@ -170,7 +170,7 @@ ggplot() +
   geom_sf(data = counties, fill = "grey", color=alpha("white",1), size = .2) + 
   geom_raster(data = data, aes(x=x, y=y, fill=ET*scalar)) +
   facet_grid(cols=vars(type), labeller = labeller(type = new.labs)) +
-  scale_fill_gradientn(name="ET (cm/year)", colours = c("darkgoldenrod2", "khaki1", "lightgreen",  "deepskyblue","mediumblue", "navyblue", "midnightblue", "black"), limits = c(-39.1, 234.6), breaks = seq(0, 200, by = 100)) +
+  scale_fill_gradientn(name="ET (mm/year)", colours = c("darkgoldenrod2", "khaki1", "lightgreen",  "deepskyblue","mediumblue", "navyblue", "midnightblue", "black"), limits = c(-391, 2346), breaks = seq(0, 2000, by = 1000)) +
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   xlim(c(minlong, maxlong)) + 
   ylim(c(minlat, maxlat)) + 

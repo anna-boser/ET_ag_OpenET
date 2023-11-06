@@ -26,7 +26,7 @@ experiment_name <- "fallow0.05,2_4-18_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 dataset <- "test" # val or test
 tidy <- FALSE
-scalar = 1.2 # mm/month to cm/year
+scalar = 12 # mm/month to mm/year
 
 report <- here(experiment_path, "1_report.txt")
 if (file.exists(report)) {file.remove(report)} # start fresh every time you render
@@ -75,8 +75,8 @@ ggplot(data_year) +
   geom_smooth(aes(x=ET_pred, y=ET), method = lm, se = TRUE) +
   # annotate("text", x=3, y=1.5, label= paste("R2:", round(r2, 3), "Bias:", round(Bias, 3))) + 
   coord_fixed() + 
-  xlab("Predicted ET (cm/year)") + 
-  ylab("Observed ET (cm/year)") +
+  xlab("Predicted ET (mm/year)") + 
+  ylab("Observed ET (mm/year)") +
     xlim(c(0,85*scalar)) + 
     ylim(c(0,85*scalar))
 
@@ -109,7 +109,7 @@ loc_df %>% filter(type %in% c("ET", "ET_pred")) %>%
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   geom_point(aes(x=x,y=y,col=ET), size = .1) + 
   facet_grid(cols = vars(type), labeller = labeller(type = new.labs)) + 
-  scale_color_distiller(name="ET (cm/year)", palette="RdBu") + 
+  scale_color_distiller(name="ET (mm/year)", palette="RdBu") + 
   xlim(c(minlong, maxlong)) + 
   ylim(c(minlat, maxlat)) + 
   theme_void()
@@ -127,7 +127,7 @@ loc_df %>% filter(type %in% c("Bias")) %>%
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   geom_point(aes(x=x,y=y,col=ET_lim), size = .05) + 
   facet_grid(cols = vars(type)) + 
-  scale_color_distiller(name="Bias (cm/year)", palette="RdBu", limits = c(-lim, lim)) + 
+  scale_color_distiller(name="Bias (mm/year)", palette="RdBu", limits = c(-lim, lim)) + 
   theme_void()+ 
   xlim(c(minlong, maxlong)) + 
   ylim(c(minlat, maxlat)) + 
@@ -197,7 +197,7 @@ ts <- rbind(ET_df, ET_pred_df)
 ggplot(ts, aes(x = month)) + 
   geom_line(aes(y = ET, col = type)) + 
   geom_ribbon(aes(ymax = min, ymin = max, fill = type), alpha = .2) + 
-  ylab("ET (cm/year)") + 
+  ylab("ET (mm/year)") + 
   xlab("Month") + 
   labs(color=NULL, fill=NULL) + 
   theme_classic()
