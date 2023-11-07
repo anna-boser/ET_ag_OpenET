@@ -38,6 +38,11 @@ report <- here(experiment_path, "4_report.txt")
 if (file.exists(report)) {file.remove(report)} # start fresh every time you render
 ```
 
+# only keep 2019 since this is the only year where I have enough information about orchard age
+```{r}
+data <- filter(data, year == 2019)
+```
+
 # clean data
 ```{r}
 data <- filter(data, coverage_fraction>.5)
@@ -58,8 +63,9 @@ data <- filter(data,  subcropnames != "Greenhouse")
 # combine potatoes and "potatoes or sweet potato"
 data$subcropnames <- ifelse(data$subcropnames %in% c("Potatoes", "Potato or Sweet potato"), "Potato or Sweet potato", data$subcropnames)
 
-# control for variation across years
-data <- year_control(data)
+# # control for variation across years (don't need to do this since I'm only looking at 2019 anyways)
+# data <- year_control(data)
+
 ```
 
 ```{r}
@@ -69,6 +75,34 @@ data <- add_basin(data)
 data <- filter(data, !is.na(subbasin_n)) # remove pixels that are not in a subbasin
 data <- filter(data, subbasin_n != "CAPAY VALLEY") # this is tiny and not really in the CV
 data <- filter(data, cropnames != "Young Perennial") # remove young perennials because you can't actually switch to these
+```
+
+
+## Only keep orchards that are not young or old
+```{r}
+# read in all crop information
+get_crop <- function(year){
+  crop <- fread(here(crops_dwr_table_path, paste0("crops_all_dwr_fallow", year, ".csv")))
+  crop$year <- year
+  return(crop)
+}
+crop_data <- rbindlist(lapply(c(2014, 2016, 2018, 2020), get_crop), fill = TRUE)
+
+# get a list of locations where a location was "Young Perennial" in any of the other years
+YP <- filter(crop_data, cropnames == "Young Perennial")
+old_young_locations <- unique(paste(sprintf("%.7f", YP$x), sprintf("%.7f", YP$y)))
+
+# remove instances from the data where a deciduous fruits & nuts or citrus & subtropical pixel was YP in any of the other years
+data$loc <- paste(sprintf("%.7f", data$x), sprintf("%.7f", data$y))
+data <- filter(data, !(cropnames %in% c("Deciduous fruits and nuts", "Citrus and subtropical") & loc %in% old_young_locations))
+```
+## control for climate and other physical aspects
+```{r}
+# there are some NA values and this keeps the linear models from making predictions, so we toss these
+data <- filter(data, !is.na(PET), !is.na(Elevation), !is.na(Aspect), !is.na(Slope), !is.na(TWI), !is.na(Soil)) 
+
+# remove climate variation
+data$ag_ET <- data$ag_ET - (lm(ag_ET~PET+Elevation+Aspect+Slope+TWI+Soil, data)$fitted.values - mean(data$ag_ET))
 ```
 
 # get medians, means, etc. 
@@ -157,13 +191,15 @@ names(new.labs) <- c("med_crop_switch", "min_crop_switch", "median_same_crop", "
 
 scenarios$Intervention <- factor(scenarios$Intervention, levels = c("med_crop_switch", "min_crop_switch", "median_same_crop", "fallow"))
 
+scenarios$Percent_savings_color <- pmin(scenarios$Percent_savings, 20)
+
 filter(scenarios, !(Intervention %in% c("min_crop_switch"))) %>% 
 #scenarios %>%
   ggplot() + 
   geom_sf(data = counties, fill = "grey", color=alpha("white",1), size = .2) + 
-  geom_sf(aes(fill = Percent_savings), color=alpha("black",.3), size = .2) + 
+  geom_sf(aes(fill = Percent_savings_color), color=alpha("black",.3), size = .2) + 
   facet_grid(cols = vars(Intervention), labeller = labeller(Intervention = new.labs)) +
-  scale_fill_distiller(palette="Blues", direction=1, name = "% Savings", breaks = seq(0, 40, by = 10)) + 
+  scale_fill_distiller(palette="Blues", direction=1, name = "% Savings", labels = c("0", "5", "10", "15", ">20"), breaks = seq(0, 20, by = 5)) + 
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   xlim(c(minlong, maxlong)) + 
   ylim(c(minlat, maxlat)) + 
@@ -188,3 +224,4 @@ ggsave(here(experiment_path, "Figure_3.pdf"),
        height = 8.9,
        units = "cm")
 ```
+
