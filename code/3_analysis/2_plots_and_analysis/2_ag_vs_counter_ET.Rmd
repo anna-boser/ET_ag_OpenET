@@ -28,7 +28,7 @@ source(here("helper_functions.R"))
 
 ## Read in the data
 ```{r}
-experiment_name <- "fveg_subset_6-7_gb"
+experiment_name <- "fallow0.05,2_4-18_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 test <- fread(here(test_data_path, paste0("fallow0.05,2_test.csv"))) # the pixels not used in training or validation
 data <- fread(file = here(experiment_path, "agriculture_yearly.csv"))
@@ -84,7 +84,7 @@ vario_ET2 <- rbind(vario_ET, vario_ag_ET)
 ggplot(vario_ET2) + 
   geom_line(aes(x = dist, y = gamma, color = type)) + 
   geom_point(aes(x = dist, y = gamma, color = type)) + 
-  scale_color_manual(values=c("seagreen", "navyblue")) + 
+  scale_color_manual(values=c("#009966", "black")) + 
   theme_bw() + 
   theme(legend.position = c(.2, .85), 
         legend.title=element_blank()) + 
