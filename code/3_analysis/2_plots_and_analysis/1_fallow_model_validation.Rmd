@@ -16,6 +16,7 @@ library(sf)
 library(latex2exp)
 library(lfe)
 library(tidyr)
+library(RColorBrewer)
 
 source(here("file_paths.R"))
 source(here("helper_functions.R"))
@@ -54,6 +55,10 @@ if (tidy == FALSE){
 
 write("montly stats" ,file=report,append=TRUE)
 MSE <- mean((data$ET_pred - data$ET)^2, na.rm=TRUE)
+r2 <- summary(lm(ET~ET_pred, data=data))$r.squared 
+Bias <- mean(data$ET_pred - data$ET, na.rm=TRUE)
+RMSE <- sqrt(mean((data$ET_pred - data$ET)^2, na.rm=TRUE))
+MAE <- mean(abs(data$ET_pred - data$ET), na.rm=TRUE)
 line <- paste("R2:", round(r2, 3), "Bias:", round(Bias, 3), "RMSE:", round(RMSE, 3), "MAE:", round(MAE, 3))
 write(line,file=report,append=TRUE)
 ```
@@ -95,9 +100,9 @@ write(line,file=report,append=TRUE)
 study_area <- st_read(study_area_loc) %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
 counties <- st_read(counties_loc) %>% filter(STATEFP == "06") %>% st_transform(st_crs("+proj=longlat +datum=WGS84"))
 
-loc_df <- data %>% group_by(x,y) %>% summarise(Bias = -mean(ag_ET), 
-                                       ET = mean(ET), 
-                                       ET_pred = mean(ET_pred)) %>%
+loc_df <- data %>% group_by(x,y) %>% summarise(Bias = -mean(ag_ET)*scalar, 
+                                       ET = mean(ET)*scalar, 
+                                       ET_pred = mean(ET_pred)*scalar) %>%
   pivot_longer(cols=c("Bias", "ET", "ET_pred"), names_to = "type", values_to = "ET")
 
 new.labs <- c("Observed ET", "Predicted ET")
@@ -118,7 +123,8 @@ ggsave(here(experiment_path, "Figure_S2.pdf"),
        height = 11.1,
        units = "cm")
   
-lim <- 15 # quantile(abs(loc_df$ET), .80)
+lim <- 200 # quantile(abs(loc_df$ET), .40)
+print(lim)
 loc_df$ET_lim <- ifelse(loc_df$ET>lim, lim, loc_df$ET)
 loc_df$ET_lim <- ifelse(loc_df$ET<(-lim), -lim, loc_df$ET)
 loc_df %>% filter(type %in% c("Bias")) %>%
@@ -194,12 +200,15 @@ ET_pred_df <- ts_from_felm(felm(ET_pred~month_f-1 | 0 | 0 | cluster+year, data))
 ET_pred_df$type = "Predicted ET"
 ts <- rbind(ET_df, ET_pred_df)
 
+# Define a color palette with high contrast
+high_contrast_colors <- c("dodgerblue", "firebrick1") # brewer.pal(3, "Set1")
+
 ggplot(ts, aes(x = month)) + 
   geom_line(aes(y = ET, col = type), size = .25) + # make the lines smaller so that they overlap less
   geom_ribbon(aes(ymax = min, ymin = max, fill = type), alpha = .2) + 
-  scale_color_viridis(discrete = TRUE) +  # Colorblind-friendly palette for lines
-  scale_fill_viridis(discrete = TRUE) +   # Colorblind-friendly palette for ribbons
-  ylab("ET (mm/year)") + 
+  scale_color_manual(values = high_contrast_colors) +  # Use manual colors for lines
+  scale_fill_manual(values = high_contrast_colors) +   # Use manual colors for ribbons
+  ylab("ET (mm/month)") + 
   xlab("Month") + 
   labs(color=NULL, fill=NULL) + 
   theme_bw() + 
