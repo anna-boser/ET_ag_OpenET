@@ -195,6 +195,7 @@ if (is.na(irr_year)){
   irrigation_avg <- irrigation %>% 
     group_by(NAME) %>% 
     summarize(mm.year = mean(mm.year),
+              kg.year = mean(kg.year),
               mm.day = mean(mm.day),
               flood = mean(flood), 
               drip = mean(drip), 
@@ -215,22 +216,6 @@ efficiency_df$irrigation_efficiency_min <- efficiency_df$ag_ET_min*100/efficienc
 efficiency_df$irrigation_efficiency_max <- efficiency_df$ag_ET_max*100/efficiency_df$mm.year
 ```
 
-```{r}
-# mix and match all years to get irrigation efficiencies
-combo <- data.table()
-for (ag_y in c(2016, 2018, 2019)){
-  for (irr_y in c(2010, 2015)){
-    irr <- irrigation %>% filter(irryear == irr_y)
-    ag <- all_years %>% filter(year == ag_y)
-    combined <- base::merge(irr, ag, by="NAME", all.x = TRUE)
-    combined$irrigation_efficiency <- combined$ag_ET_mm_year*100/combined$mm.year
-    combo <- rbind(combo, combined)
-  }
-}
-combo <- filter(combo, n > 50000)
-```
-
-
 ## Do some plotting!
 
 ### Read in county shapefile and merge dfs
@@ -245,12 +230,12 @@ counties_irrigation <- base::merge(counties, efficiency_df, by = "NAME")
 ### Plot 1: irrigation use and agricultural water consumption
 ```{r, eval = TRUE}
 plotted_datasets <- ggplot() + 
-  geom_sf(data = counties_irrigation, aes(fill = kg.year), color=alpha("red",0)) + 
-  scale_fill_gradient2(name="Irrigation (kq/year)", low = "red", mid = "white", high = "deepskyblue4") + 
+  geom_sf(data = counties_irrigation, aes(fill = kg.year/1000000000), color=alpha("black",.2), size = .2) + # total water diversions in Tg
+  scale_fill_gradient2(name="Irrigation (kq/year)", low = "red", mid = "white", high = "deepskyblue4", breaks = c(1000, 2000)) + 
   # geom_sf(data = counties_irrigation, fill=alpha("red",0), color=alpha("grey64")) + 
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   new_scale_fill() +
-  geom_raster(data = data[sample(nrow(data), size = nrow(data), replace = FALSE),], aes(x=x, y=y, fill=ag_ET_year), alpha=0.75) +
+  geom_raster(data = data[sample(nrow(data), size = nrow(data), replace = FALSE),], aes(x=x, y=y, fill=ag_ET_year), alpha=1) +
   scale_fill_gradientn(name="Agricultural ET (mm/year)", colours = c("darkgoldenrod2", "khaki1", "lightgreen",  "deepskyblue","mediumblue", "navyblue", "midnightblue", "black"), limits = c(-391, 2346), breaks = seq(0, 2000, by = 1000)) +
   theme_void() + 
   annotation_scale() + 
@@ -291,7 +276,7 @@ plotted_eff
 theme_set(theme_pubr())
 
 figure <- ggarrange(plotted_datasets, plotted_eff, 
-                    labels = c("A", "B"),
+                    labels = c("a", "b"),
                     ncol = 2, nrow = 1)
 figure
 
@@ -303,6 +288,22 @@ ggsave(here(experiment_path, "Figure_4.pdf"),
 
 
 # Look at uncertainty based on what you get with combining different years
+```{r}
+# mix and match all years to get irrigation efficiencies
+combo <- data.table()
+for (ag_y in c(2016, 2018, 2019)){
+  for (irr_y in c(2010, 2015)){
+    irr <- irrigation %>% filter(irryear == irr_y)
+    ag <- all_years %>% filter(year == ag_y)
+    combined <- base::merge(irr, ag, by="NAME", all.x = TRUE)
+    combined$irrigation_efficiency <- combined$ag_ET_mm_year*100/combined$mm.year
+    combo <- rbind(combo, combined)
+  }
+}
+combo <- filter(combo, n > 50000)
+```
+
+
 ```{r}
 cv_data$none <- ""
 ggplot(combo, aes(x = reorder(NAME, -lat))) + 

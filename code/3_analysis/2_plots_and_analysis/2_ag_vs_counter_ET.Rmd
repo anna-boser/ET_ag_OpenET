@@ -59,7 +59,7 @@ error_attribution = yearly_var/var(data$ag_ET)
 # write these in the report
 line = paste("Total variance in all the dataset:", var(data$ag_ET))
 write(line,file=report,append=TRUE)
-line = paste("Total variance in all the dataset:", yearly_var)
+line = paste("Total mse from all error sources:", yearly_var)
 write(line,file=report,append=TRUE)
 line = paste("Proportion of total variance caused by error:", error_attribution)
 write(line,file=report,append=TRUE)

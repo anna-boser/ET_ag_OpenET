@@ -138,13 +138,13 @@ ggplot(bardata, aes(x = month)) +
   theme_bw() +
   scale_x_continuous(breaks = c(1:12)) +
   scale_color_manual(
-    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
+    values = c("ag_ET" = "#009966", "ET_pred" = "darkgoldenrod", "ET" = "black"),
     breaks = c("ag_ET", "ET_pred", "ET"),
     labels = c("Agricultural ET", "Natural ET", "Total ET"),
     name = ""
   ) +
   scale_fill_manual(
-    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
+    values = c("ag_ET" = "#009966", "ET_pred" = "darkgoldenrod", "ET" = "black"),
     breaks = c("ag_ET", "ET_pred", "ET"),
     labels = c("Agricultural ET", "Natural ET", "Total ET"),
     name = ""
@@ -154,7 +154,7 @@ ggplot(bardata, aes(x = month)) +
     fill = guide_legend(override.aes = list(size = 0.5))
   ) +
   theme(
-    axis.text.x = element_text(angle = 30, hjust = 1, size = 11),
+    axis.text.x = element_text(size = 11),
     axis.title.x = element_text(size = 11),
     axis.text.y = element_text(size = 11),
     axis.title.y = element_text(size = 11),
@@ -220,15 +220,15 @@ ggplot(bardata, aes(x = month)) +
   ylab("mm/month") +
   xlab("Month") +
   theme_bw() +
-  scale_x_continuous(breaks = c(1:12)) +
+  scale_x_continuous(breaks = c(1, 3, 5, 7, 9, 11)) +
   scale_color_manual(
-    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
+    values = c("ag_ET" = "#009966", "ET_pred" = "darkgoldenrod", "ET" = "black"),
     breaks = c("ag_ET", "ET_pred", "ET"),
     labels = c("Agricultural ET", "Natural ET", "Total ET"),
     name = ""
   ) +
   scale_fill_manual(
-    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
+    values = c("ag_ET" = "#009966", "ET_pred" = "darkgoldenrod", "ET" = "black"),
     breaks = c("ag_ET", "ET_pred", "ET"),
     labels = c("Agricultural ET", "Natural ET", "Total ET"),
     name = ""
@@ -238,7 +238,7 @@ ggplot(bardata, aes(x = month)) +
     fill = guide_legend(override.aes = list(size = 0.5))
   ) +
   theme(
-    axis.text.x = element_text(angle = 30, hjust = 1, size = 11),
+    axis.text.x = element_text(size = 11),
     axis.title.x = element_text(size = 11),
     axis.text.y = element_text(size = 11),
     axis.title.y = element_text(size = 11),
@@ -251,7 +251,7 @@ ggplot(bardata, aes(x = month)) +
 
 ggsave(here(experiment_path, "Figure_1.5_crops.pdf"), 
        width = 17.8,
-       height = 11.1,
+       height = 16,
        units = "cm")
 ```
 
@@ -274,15 +274,15 @@ ggplot(bardata, aes(x = month)) +
   ylab("mm/month") +
   xlab("Month") +
   theme_bw() +
-  scale_x_continuous(breaks = c(1:12)) +
+  scale_x_continuous(breaks = c(1, 4, 7, 10)) +
   scale_color_manual(
-    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
+    values = c("ag_ET" = "#009966", "ET_pred" = "darkgoldenrod", "ET" = "black"),
     breaks = c("ag_ET", "ET_pred", "ET"),
     labels = c("Agricultural ET", "Natural ET", "Total ET"),
     name = ""
   ) +
   scale_fill_manual(
-    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
+    values = c("ag_ET" = "#009966", "ET_pred" = "darkgoldenrod", "ET" = "black"),
     breaks = c("ag_ET", "ET_pred", "ET"),
     labels = c("Agricultural ET", "Natural ET", "Total ET"),
     name = ""
@@ -292,7 +292,7 @@ ggplot(bardata, aes(x = month)) +
     fill = guide_legend(override.aes = list(size = 0.5))
   ) +
   theme(
-    axis.text.x = element_text(angle = 30, hjust = 1, size = 11),
+    axis.text.x = element_text(size = 11),
     axis.title.x = element_text(size = 11),
     axis.text.y = element_text(size = 11),
     axis.title.y = element_text(size = 11),
@@ -343,15 +343,15 @@ ggplot(bardata, aes(x = month)) +
   ylab("mm/month") +
   xlab("Month") +
   theme_bw() +
-  scale_x_continuous(breaks = c(1:12)) +
+  scale_x_continuous(breaks = c(1, 4, 7, 10)) +
   scale_color_manual(
-    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black", "Pcp" = "grey"),
+    values = c("ag_ET" = "#009966", "ET_pred" = "darkgoldenrod", "ET" = "black", "Pcp" = "grey"),
     breaks = c("ag_ET", "ET_pred", "ET", "Pcp"),
     labels = c("Agricultural ET", "Natural ET", "Total ET", "Precipitation"),
     name = ""
   ) +
   scale_fill_manual(
-    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black", "Pcp" = "white"),
+    values = c("ag_ET" = "#009966", "ET_pred" = "darkgoldenrod", "ET" = "black", "Pcp" = "white"),
     breaks = c("ag_ET", "ET_pred", "ET", "Pcp"),
     labels = c("Agricultural ET", "Natural ET", "Total ET", "Precipitation"),
     name = ""
@@ -361,7 +361,7 @@ ggplot(bardata, aes(x = month)) +
     fill = guide_legend(override.aes = list(size = 0.5))
   ) +
   theme(
-    axis.text.x = element_text(angle = 30, hjust = 1, size = 11),
+    axis.text.x = element_text(size = 11),
     axis.title.x = element_text(size = 11),
     axis.text.y = element_text(size = 11),
     axis.title.y = element_text(size = 11),
@@ -371,11 +371,6 @@ ggplot(bardata, aes(x = month)) +
     legend.text = element_text(size = 11)
   ) + 
   facet_wrap(vars(COUNTY_NAME))
-
-ggsave(here(experiment_path, "Figure_1.5_counties_pcp.pdf"), 
-       width = 17.8,
-       height = 11.1,
-       units = "cm")
 ```
 
 
@@ -400,13 +395,13 @@ ggplot(bardata, aes(x = month)) +
   theme_bw() +
   scale_x_continuous(breaks = c(1:12)) +
   scale_color_manual(
-    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
+    values = c("ag_ET" = "#009966", "ET_pred" = "darkgoldenrod", "ET" = "black"),
     breaks = c("ag_ET", "ET_pred", "ET"),
     labels = c("Agricultural ET", "Natural ET", "Total ET"),
     name = ""
   ) +
   scale_fill_manual(
-    values = c("ag_ET" = "green4", "ET_pred" = "darkgoldenrod", "ET" = "black"),
+    values = c("ag_ET" = "#009966", "ET_pred" = "darkgoldenrod", "ET" = "black"),
     breaks = c("ag_ET", "ET_pred", "ET"),
     labels = c("Agricultural ET", "Natural ET", "Total ET"),
     name = ""
@@ -416,7 +411,7 @@ ggplot(bardata, aes(x = month)) +
     fill = guide_legend(override.aes = list(size = 0.5))
   ) +
   theme(
-    axis.text.x = element_text(angle = 30, hjust = 1, size = 11),
+    axis.text.x = element_text(size = 11),
     axis.title.x = element_text(size = 11),
     axis.text.y = element_text(size = 11),
     axis.title.y = element_text(size = 11),
@@ -429,7 +424,7 @@ ggplot(bardata, aes(x = month)) +
 
 ggsave(here(experiment_path, "Figure_1.5_valleys.pdf"), 
        width = 17.8,
-       height = 11.1,
+       height = 8,
        units = "cm")
 ```
 
