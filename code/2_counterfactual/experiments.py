@@ -12,8 +12,8 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.ensemble import GradientBoostingRegressor
 
 # first, define your model 
-model = MyModel(experiment_name="fallow_0.05,2_4-18_gb", # change for every experiment. Suggested naming convention: dataset/split name _ date _ model type
-                dataset="fallow_0.05,2", # What dataset? Options: fallow_0.05,2. fallow_0,2, fallow_cdl0,2. See split file. 
+model = MyModel(experiment_name="fallow0.05,2_4-18_gb", # change for every experiment. Suggested naming convention: dataset/split name _ date _ model type
+                dataset="fallow0.05,2", # What dataset? Options: fallow_0.05,2. fallow_0,2, fallow_cdl0,2. See split file. 
                 regressor=GradientBoostingRegressor(verbose=1, random_state=0), # What kind of refressor? Can use RandomForestRegressor, GradientBoostingRegressor, etc. 
                 nans_ok=False, # Can this model handle NaN values? 
                 month=True, # Does this dataset have values for different months? If so, will turn into dummies
