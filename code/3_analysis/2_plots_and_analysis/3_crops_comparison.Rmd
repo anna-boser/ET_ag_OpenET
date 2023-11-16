@@ -28,8 +28,8 @@ source(here("helper_functions.R"))
 experiment_name <- "fallow0.05,2_4-18_gb"
 experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 data <- fread(file = here(experiment_path, "agriculture_yearly.csv"))
-test <- fread(here(test_data_path, paste0("fallow0,2_test.csv"))) # the pixels not used in training or validation 
-# test <- fread(here(test_data_path, paste0("fallow0.05,2_test.csv"))) # the pixels not used in training or validation 
+# test <- fread(here(test_data_path, paste0("fallow0,2_test.csv"))) # the pixels not used in training or validation 
+test <- fread(here(test_data_path, paste0("fallow0.05,2_test.csv"))) # the pixels not used in training or validation 
 
 report <- here(experiment_path, "3_report.txt")
 if (file.exists(report)) {file.remove(report)} # start fresh every time you render
