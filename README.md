@@ -36,7 +36,7 @@ We additionally provide our final full dataset with annual estimates of agricult
 
 This section demonstrates how to run one of the scripts in this repository. We will be kitting the `.Rmd` file that simulates water savings from various theoretical management interventions, `4_scenarios.Rmd` from `code/3_analysis`, using a *random 5% subset* of the annual agricultural ET dataset, `agriculture_yearly.csv` which can be found in the `demo` folder. 
 
-First, ensure you have installed R and all of the libraries listed at the top of the file by opening an R secion and using the install.packages("package") command (with "package" replaced by the name of the actual package). Next, open `4_scenarios.Rmd` in your IDE of choice (we recommend RStudio for working with R). 
+First, ensure you have installed R and all of the libraries listed at the top of the file by opening an R secion and using the install.packages(`"package"`) command (with `"package"` replaced by the name of the actual package). Next, open `4_scenarios.Rmd` in your IDE of choice (we recommend RStudio for working with R). 
 
 Because the data we will use in the `demo` folder as opposed to an experiment folder which is where the data would be had you generated it using the pipeline, we need to make some slight modifications in the setion `Read in the data` before running the code: 
 
