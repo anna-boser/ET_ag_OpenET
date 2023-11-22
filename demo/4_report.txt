@@ -1,0 +1,5 @@
+Intervention,Percent_savings
+med_crop_switch,10.4242972133713
+min_crop_switch,89.0545743461661
+median_same_crop,11.2228768498233
+fallow,9.37987470236096
