@@ -30,11 +30,11 @@ To run the pipeline from start to finish, run the numbered scripts in order. Eac
 ## Aquiring the data
 
 All raw data are publicly available. Download links are provided in file_paths.R. 
-We additionally provide the full dataset with annual estimates of agricultural ET on figshare, which we use to complete the final analyses. A **random 5% subset** of this dataset is also available in this repository under `demo/agriculture_yearly.csv`. 
+We additionally provide the full dataset with annual estimates of agricultural ET on figshare, which we use to complete the final analyses. A *random 5% subset* of this dataset is also available in this repository under `demo/agriculture_yearly.csv`. 
 
 ## Demo
 
-This section demonstrates how to run one of the scripts in this repository. We will be kitting the .Rmd file that simulates water savings from various theoretical management interventions, `4_scenarios.Rmd` from `code/3_analysis`, using a **random 5% subset** of the annual agricultural ET dataset, `agriculture_yearly.csv` which can be found in the `demo` folder. 
+This section demonstrates how to run one of the scripts in this repository. We will be kitting the .Rmd file that simulates water savings from various theoretical management interventions, `4_scenarios.Rmd` from `code/3_analysis`, using a *random 5% subset* of the annual agricultural ET dataset, `agriculture_yearly.csv` which can be found in the `demo` folder. 
 
 First, ensure you have installed R and all of the libraries listed at the top of the file by opening an R secion and using the install.packages("package") command (with "package" replaced by the name of the actual package). Next, open `4_scenarios.Rmd` in your IDE of choice (we recommend RStudio for working with R). 
 
