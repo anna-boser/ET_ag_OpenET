@@ -52,8 +52,8 @@ Rscript -e "rmarkdown::render('code/3_analysis/2_plots_and_analysis/4_scenarios.
 
 This should take about two minutes to run and creates three outputs:
 1. An html file representing the 'knit' `.Rmd`. This can be found in the same repository as your `.Rmd` file (`code/3_analysis`).
-2. A figure analogous to Fig. 3 in the main text, `Figure_3.pdf`, though with a different result of the analysis being run on a subset of the data. This can be found in the same repository as your `yearly_agriculture.csv` dat (in our case, the `demo`folder). 
-3. A report, `4_report.txt`, containing some statistics. Again, these numbers will be slightly different from the main text results since we are only using a small subset of the full dataset. This report can be found in the same repository as your `yearly_agriculture.csv` data (in our case, the `demo`folder). 
+2. A figure analogous to Fig. 3 in the main text, `Figure_3.pdf`, though with a different result of the analysis being run on a subset of the data. This can be found in the same repository as your `yearly_agriculture.csv` dat (in our case, the `demo` folder). 
+3. A report, `4_report.txt`, containing some statistics. Again, these numbers will be slightly different from the main text results since we are only using a small subset of the full dataset. This report can be found in the same repository as your `yearly_agriculture.csv` data (in our case, the `demo` folder). 
 
 All three of these outputs have been placed in the `demo` folder for you to compare your results. 
    
