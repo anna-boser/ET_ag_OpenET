@@ -30,7 +30,7 @@ To run the pipeline from start to finish, run the numbered scripts in order. Eac
 ## Aquiring the data
 
 All raw data are publicly available. Download links are provided in `file_paths.R`. 
-We additionally provide the full dataset with annual estimates of agricultural ET on figshare, which we use to complete the final analyses. A *random 5% subset* of this dataset is also available in this repository under `demo/agriculture_yearly.csv`. 
+We additionally provide our final full dataset with annual estimates of agricultural ET which use for our analyses on figshare, which we use to complete the final analyses. A *random 5% subset* of this dataset is also available in this repository under `demo/agriculture_yearly.csv`. 
 
 ## Demo
 
