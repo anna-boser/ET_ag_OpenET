@@ -2,10 +2,10 @@
  
 ## Requirements and installation instructions
 
-To clone this repository to your local computer, paste the following line of code in your terminal, replacing `<your username>` with your actual github username. Cloning the repository should take about 1 minute. 
+To clone this repository to your local computer, paste the following line of code in your terminal. Cloning the repository should take about 1 minute. 
 
 ```bash
-git clone https://github.com/<your username>/ET_ag_disALEXI
+git clone https://github.com/anna-boser/ET_ag_disALEXI
 ```
 
 This pipeline has parts written in both R (version 4.1.2) and Python (version 3.9). Both of these programs take approximately 5 minutes to install, and can be run on MasOS, Windows, or Linux. 
