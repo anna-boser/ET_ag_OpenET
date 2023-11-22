@@ -1,8 +1,10 @@
 # ET_ag_disALEXI
  
-## Installation instructions
+## Requirements and installation instructions
 
-This pipeline has parts written in both R and Python. To reproduce the Python environment we use, follow the steps bellow: 
+This pipeline has parts written in both R (version 4.1.2) and Python (version 3.9). Both of these programs take approximately 5 minutes to install, and can be run on MasOS, Windows, or Linux. 
+
+To reproduce the Python environment we use, follow the steps bellow: 
 
 1. Install [Conda](http://conda.io/)
 
@@ -14,25 +16,52 @@ conda activate et_ag
 pip install -r requirements.txt
 pip install -U sklearn
 ```
-## Aquiring the data
 
-...
-
-## Running the pipeline
-
-### Overview
+## Pipeline overview
 The pipeline is structured around three tasks central to the analysis, located in the `code` folder: 
 1. Processing already existing data into datasets usable for the study (`code/1_generate_datasets`) (R, Python)
-1. Creating the artificial counterfactual estimating natural ET (`code/2_counterfactual`) (Python)
+1. Creating the artificial counterfactual estimating naturally-occurring ET (`code/2_counterfactual`) (Python)
 1. Doing analysis (`code/3_analysis`) (R, Rmd)
 
 There are additionally two helper files, `helper_functions.R`, and `file_paths.R`. `helper_functions.R` is simply a set of functions that get repeatedly called and are often sourced, especially during the analysis phase. `file_paths.R` defines the location of all data (and where it was generated or downloaded from), and is also sourced in all R code calling data. Therefore, if data storage needs to be reorganized, one must simply change this file and all R code writing or reading from this file will automatically still function. 
 
 To run the pipeline from start to finish, run the numbered scripts in order. Each script has a header that describes its function, as well as comments to help with line-by-line interpretation of commands. 
 
+## Aquiring the data
+
+All raw data are publicly available. Download links are provided in file_paths.R. 
+We additionally provide the full dataset with annual estimates of agricultural ET on figshare, which we use to complete the final analyses. A **random 5% subset** of this dataset is available in this repository under `demo/yearly_agriculture.csv`
+
+## Demo
+
+This section demonstrates how to run one of the scripts in this repository. We will be kitting the .Rmd file that simulates water savings from various theoretical management interventions, `4_scenarios.Rmd` from `code/3_analysis`, using a **random 5% subset** of the annual agricultural ET dataset which can be found in the `demo` folder. 
+
+First, ensure you have installed R and all of the libraries listed at the top of the file by opening an R secion and using the install.packages("package") command (with "package" replaced by the name of the actual package). Next, open `4_scenarios.Rmd` in your IDE of choice (we recommend RStudio for working with R). 
+
+Because the data we will use in the `demo` folder as opposed to an experiment folder which is where the data would be had you generated it using the pipeline, we need to make some slight modifications in the setion `Read in the data` before running the code: 
+
+```
+experiment_path <- here("demo") # changed from experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+```
+
+Then, if you are in RStudio, you can press the "Knit" button. Otherwise, run the following command in your terminal, ensuring your working directory is this repository. 
+
+```
+Rscript -e "rmarkdown::render('code/3_analysis/2_plots_and_analysis/4_scenarios.Rmd')"
+```
+
+This should take about [time] to run and create three outputs:
+1. An html file representing the 'knit' .Rmd. This can be found in the same repository as your .Rmd file.
+2. A figure analogous to Fig. 3 in the main text, though with different numbers as a result of the analysis being run on a subset of the data. This can be found in the same repository as your `yearly_agriculture.csv` data
+3. A report containing some statistics. This can be found in the same repository as your `yearly_agriculture.csv` data. 
+
+All three of these outputs have been placed in the `example_data` folder for you to compare your results. 
+   
+## Running the pipeline
+
 ### Preliminary data processing
 
-The first section of the pipeline, `code/1_generate_datasets`, is dedicated to amassing existing datasets into forms useful for generating the natural ET counterfactual and for doing analysis. This step generates the following datasets: 
+The first section of the pipeline, `code/1_generate_datasets`, is dedicated to amassing existing datasets into forms useful for generating the naturally-occurring ET counterfactual and for doing analysis. This step generates the following datasets: 
 
 1. The main dataset: A tabular dataset with the following values for each 70m pixel used for agriculture (either actively in use or fallow/idle) in the California Central Valley
   - latitude and longitude
@@ -45,7 +74,7 @@ The first section of the pipeline, `code/1_generate_datasets`, is dedicated to a
   - Soil quality
   - PET
   - ET (from OpenET)
-2. Train, validation, and test splits for all fallow/idle lands of the main dataset to be used to build the machine learning model for the natural ET counterfactual
+2. Train, validation, and test splits for all fallow/idle lands of the main dataset to be used to build the machine learning model for the naturally-occurring ET counterfactual
 3. Additional tabular datasets to be used in the analysis phase that have the following information for each pixel for the main dataset:
   - County
   - Crop type
@@ -97,7 +126,7 @@ Notable experiments include:
   - This model is used to check whether removing the fallow lands that have the 5% highest ET in the growing season has a significant impact on the results. 
 - `fallow_cdl0,2_10-25_gb`:
   - Here we use the split trained on the fallow lands as determined by the DWR LandIQ dataset (`fallow`) *and* the cropland data layer (`cdl`). The spatial hold out sets used to make the split are 2km wide in either direction (`2`). This experiment was run on October 25, 2023 (`10-25`) and a gradient boosting regressor was used (`gb`).
-  - This experiment is used to ensure that incorrect classification of fallow lands is not causing inflated natural ET estimates, especially during the growing season. 
+  - This experiment is used to ensure that incorrect classification of fallow lands is not causing inflated naturally-occurring ET estimates, especially during the growing season. 
 
 At this stage, we additionally check the importance of different variables used in the model and plot this (`feature_importance.py`). We only run this for the experiment we elect for our analysis, `fallow0.05,2_4-18_gb`.
 
