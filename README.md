@@ -47,7 +47,8 @@ First, ensure you have installed R and all of the libraries listed at the top of
 Because the data we will use in the `demo` folder as opposed to an experiment folder which is where the data would be had you generated it using the pipeline, we need to make some slight modifications in the setion `Read in the data` before running the code: 
 
 ```R
-experiment_path <- here("demo") # changed from experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
+experiment_path <- here("demo")
+# changed from experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 ```
 
 Then, if you are in RStudio, you can press the "Knit" button. Otherwise, run the following command in your terminal, ensuring your working directory is this repository. 
