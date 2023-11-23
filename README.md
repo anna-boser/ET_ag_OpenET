@@ -92,11 +92,7 @@ The first section of the pipeline, `code/1_generate_datasets`, is dedicated to a
 
 #### Intermediate datasets
 
-To build the first two datasets described above, we first gather the required existing datasets and process them to create raster versions of these data all available on the same 70m grid. This is achieved in `code/1_generate_datasets/1_intermediate`, for ET (`1_OpenET.R`), land cover (`2_agriculture.R`), PET (`4_PET.R`), soil quality (`5_soils.R and 5.5_soils.py`), topographic (`6_topography.R`), and topographic wetness index (`7_topographic_wetness_index.R) data. These last two are time varying and therefore generate multiple rasters. 
-
-> Note to self: I think I should re-organize the data more in line with the pipeline. So e.g. all of the data that need to be gridded are in one place, then all of the gridded data, and then you can find the rest elsewhere.
-> And get rid of the vegetation stuff
-> Also, I can probably try renaming the code pipeline too idk?
+To build the first two datasets described above, we first gather the required existing datasets and process them to create raster versions of these data all available on the same 70m grid. This is achieved in `code/1_generate_datasets/1_intermediate`, for ET (`1_OpenET.R`), land cover (`2_agriculture.R`), PET (`4_PET.R`), soil quality (`5_soils.R and 5.5_soils.py`), topographic (`6_topography.R`), and topographic wetness index (`7_topographic_wetness_index.R`) data. ET and PET are time varying and therefore generate multiple rasters. 
 
 #### Additional datasets
 
@@ -108,15 +104,9 @@ Once these intermediate datasets have been generated, they can be aggregated to 
 
 Finally, in `5_clean_and_split_fallow.R`, we retrieve all the fallow observations from the main dataset and split them into training, validation, and test groups. The function to create a split takes three arguments: (1) the percent of the dataset you want to discard based on the highest growing season ET values (to avoid contamination from lands that are irrigated instead of fallow, (2) the size of areas to group for the spatial split, and (3) the dataset you want to use -- that is, if you want the dataset that has all fallow lands or the one that is cross-referenced with the CDL. 
 
-> Note to self: get rid of all the natural land cover stuff and also rename 1_datasets_for_ml
-> 4_visualize.Rmd is kinda interesting -- it makes those histograms comparing what I trained on and what I applied to different. Don't need so should get rid of but good to keep in mind
-> get rid of everything else
-
 ### The artificial counterfactual
 
 In the second part of the pipeline, `code/2_counterfactual`, we use the training and test data to train machine learning models that predict the ET that would happen over a field if that land were fallow. To do so, we first create a model class in `model_class.py` that allows you to define a model using a variety of regressors, tune hyperparameters, train the model, and generate predictions for the train, val, and test splits for whichever split you would like. This class is then called in `experiments.py` where you can edit this file as needed to train a variety of models and generate predictions as needed over the validation and test sets, as well as the full dataset of agricultural lands. 
-
-> note to self -- the model class has a "train_or_test" thing that is outdated -- was used when I was doing veg stuff. Remove for clarity...? 
 
 Every time an experiment is run in `experiments.py`, this creates a new folder with the name of the experiment which contains the following: 
 - the `model_class.py` and `experiments.py` files as they were when the experiment was run, for reference of what parameters were used
@@ -136,24 +126,12 @@ Notable experiments include:
 
 At this stage, we additionally check the importance of different variables used in the model and plot this (`feature_importance.py`). We only run this for the experiment we elect for our analysis, `fallow0.05,2_4-18_gb`.
 
-> Note to self: get rid of apply_model.py
-
 ### Analysis
 
 In the last part of the pipeline, `code/3_analysis`, we use the counterfactual predictions from our chosen model to conduct our analysis. The code can also be modified to be run on other experiments in order to compare results across models (e.g. the effect of removing fallow fields with high growing season ET). The .Rmd files in this section are written in such a way that when they are run, you are left with not only an html output but a report and important figures will be written to the folder of the experiment whose data you are working from. 
-
-> note to self: get rid of the whole additional manipualtion folder and move everything from plots and analysis to the main folder.  
 
 We begin by doing some dataset pre-processing to make analysing the entire agricultural dataset including the counterfactual predictions easier (`0_tidy.R`). In this file, we do things like turn the month and year dummy variables back into single columns and save a subset of the data that is only fallow lands. Because the dataset is so large, we also save some aggregated versions of the data (e.g. averaged over time or space in different ways)
 
 To validate the model(s), we use (`1_fallow_model_validation.R`). This script can either take the validation or test predictions from an experiment, tidy it in the same way that (`0_tidy.R`) tidies the full dataset, and returns some validation plots and metrics. 
 
-> note to self: get rid of 1_validation.R
-
 With the tidy dataset with the predctions of a validated model, we begin our analyis. First, we calcualte some summary statistics, including the overall variance in agricultral ET of the dataset in comparison to what would be expected from model error, and plot out the variation in space of the data (`2_ag_vs_counter_ET.R`). Second, we analyze and plot out seasonal variations (`2.5_temporal_variation.R`). Third, we quantify and plot variation within and between crop types (`3_crops_comparison`), and determine the amount of variation that is explained by crop type, the proportion explained by climate, and the proportion of within-crop variation explained by climate. Fourth, we run some management scenarios to see how different approaches would affect agricultural ET (`4_scenarios.R`). Fifth, we compare agricultural ET to irrigation, calculate irrigation efficiency, and and compare these estimates to ones we would get from heuristics based on irrigation technology (`5_irrigation_comparison.R`). Sixth, we compare our approach of estimating agricultural ET to a crop-coefficient based approach (`6_CalSIMETAW_comparison.R`). Last, we analyze how orchard age affects agricultural ET (`8_orchard_age.Rmd`). 
-
-> Note to self: 3_ is the one that needs to be edited to include the variance breakdown
-> 4_ needs to be edited too
-> 5_ needs new data on irrigation...
-> 6_ eventually needs to be edited for the discussion but that's a future problem
-> Get rid of 7_comparing_results???
