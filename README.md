@@ -2,6 +2,12 @@
  
 ## Requirements and installation instructions
 
+To clone this repository to your local computer, paste the following line of code in your terminal. Cloning the repository should take about 1 minute. 
+
+```bash
+git clone https://github.com/anna-boser/ET_ag_disALEXI
+```
+
 This pipeline has parts written in both R (version 4.1.2) and Python (version 3.9). Both of these programs take approximately 5 minutes to install, and can be run on MasOS, Windows, or Linux. 
 
 To reproduce the Python environment we use, follow the steps bellow: 
@@ -40,13 +46,13 @@ First, ensure you have installed R and all of the libraries listed at the top of
 
 Because the data we will use in the `demo` folder as opposed to an experiment folder which is where the data would be had you generated it using the pipeline, we need to make some slight modifications in the setion `Read in the data` before running the code: 
 
-```
+```R
 experiment_path <- here("demo") # changed from experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 ```
 
 Then, if you are in RStudio, you can press the "Knit" button. Otherwise, run the following command in your terminal, ensuring your working directory is this repository. 
 
-```
+```bash
 Rscript -e "rmarkdown::render('code/3_analysis/2_plots_and_analysis/4_scenarios.Rmd')"
 ```
 
@@ -55,7 +61,7 @@ This should take about two minutes to run and creates three outputs:
 2. A figure analogous to Fig. 3 in the main text, `Figure_3.pdf`, though with a different result of the analysis being run on a subset of the data. This can be found in the same repository as your `yearly_agriculture.csv` dat (in our case, the `demo` folder). 
 3. A report, `4_report.txt`, containing some statistics. Again, these numbers will be slightly different from the main text results since we are only using a small subset of the full dataset. This report can be found in the same repository as your `yearly_agriculture.csv` data (in our case, the `demo` folder). 
 
-All three of these outputs have been placed in the `demo` folder for you to compare your results. 
+All three of these outputs have been placed in the `demo` folder for you to compare your results. Note that knitting the file will overwrite the `Figure_3.pdf` and `4_report.txt` originally in the folder. 
    
 ## Running the pipeline
 
