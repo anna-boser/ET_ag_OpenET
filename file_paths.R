@@ -15,10 +15,6 @@ directory_path <- function(filepath){
   return(sub('[/][^/]+$', '', filepath))
 }
 
-# ECOSTRESS DisALEXI ET 2019-2021
-# https://appeears.earthdatacloud.nasa.gov/
-raw_ecostress_path <- here("data", "1_raw", "ECOSTRESS")
-
 # OpenET 2016-2021
 # From google earth engine; see https://code.earthengine.google.com/cb078c9f8933fb4814619c7982b8e615 for script
 raw_openet_path <- here("data", "1_raw", "OpenET")
@@ -27,21 +23,9 @@ raw_openet_path <- here("data", "1_raw", "OpenET")
 # generated in ET_agriculture repository. Basically just a 10km buffer around ag lands in the central valley. 
 study_area_loc <- here("data", "1_raw", "study_area", "study_area.shp")
 
-# consistent grid -- all of CA
-# generated in ET_agriculture repository. Basically just one of the grids from the ET data extended to the enturety of California using extend(grid, CA). 
-CA_grid_loc <- here("data", "1_raw", "study_area", "CA_grid.tif")
-
 # consistent grid -- study area
 # generated in 1_generate_datasets/1_intermediate/OpenET.R
 grid_loc <- here("data", "1_raw", "study_area", "grid.tif")
-
-# monthly bricks of resampled ECOSTRESS data
-# generated in 1_generate_datasets/1_intermediate/ECOSTRESS.R
-ECOSTRESS_bricks_path <- here("data", "2_intermediate", "ECOSTRESS", "bricks")
-
-# tifs of temporally aggregated ECOSTRESS data
-# generated in 1_generate_datasets/1_intermediate/ECOSTRESS.R
-intermediate_ecostress_path <- here("data", "2_intermediate", "ECOSTRESS", "means")
 
 # tifs of monthly OpenET data
 # generated in 1_generate_datasets/1_intermediate/OpenET.R
@@ -74,37 +58,6 @@ CDL2021_loc <- here("data", "1_raw", "CDL", "CDL2021", "2021_30m_cdls.img")
 
 # CDL code dictionary
 cdl_code_dict_loc <- here("data", "1_raw", "CDL", "CDL_code_dictionary.csv")
-
-# processed cdl stuff -- only vegetation that is barren, shrub, or grassland
-# created in 1_generate_datasets/1_intermediate/vegetation.R
-ca_cdl_ag_not_removed_loc <- here("data", "2_intermediate", "vegetation", "ca_cdl_ag_not_removed.tif")
-ca_cdl_loc <- here("data", "2_intermediate", "vegetation", "ca_cdl.tif")
-cdl_loc <- here("data", "2_intermediate", "vegetation", "cdl.tif") # study area only
-
-# California protected areas database (CPAD)
-cpad_holdings_loc <- here("data/1_raw/CPAD/CPAD_2022a/CPAD_2022a_Holdings.shp")
-
-# CPAD for protected categories 1, 2, and 3
-# created in 1_generate_datasets/1_intermediate/vegetation.R
-ca_cpad_shp_loc <- here("data", "2_intermediate", "vegetation", "CPAD123_shapefile", "CPAD123.shp")
-ca_cpad_loc <- here("data", "2_intermediate", "vegetation", "ca_CPAD123.tif")
-cpad_loc <- here("data", "2_intermediate", "vegetation", "CPAD123.tif")
-
-# fveg 2014 tif that Nakoa made for me in ArcGIS
-raw_fveg_loc <- here("data", "1_raw", "FVEG", "fveg_lifeform.tif")
-
-# fveg tifs where fveg is only barren, shrub, or herbaceous
-# created in 1_generate_datasets/1_intermediate/vegetation.R
-ca_fveg_loc <- here("data", "2_intermediate", "vegetation", "ca_fveg.tif")
-fveg_loc <- here("data", "2_intermediate", "vegetation", "fveg.tif")
-
-# a shapefile of wetland boundaries in the delta
-# manually generated using QGIS to remove wetlands from FVEG
-raw_wetlands_loc <- here("data", "1_raw", "wetlands", "wetlands.shp")
-
-# the above shapefile turned into pixels that overlap it
-# generated in 3.25_wetlands.R
-wetlands_loc <- here("data", "2_intermediate", "wetlands", "wetlands.csv")
 
 # Raw PET data
 # https://data.bris.ac.uk/data/dataset/qb8ujazzda0s2aykkv0oq0ctp
@@ -165,14 +118,6 @@ counties_loc <- here("data", "1_raw", "counties", "cb_2018_us_county_500k.shp")
 # created in 1_generate_datasets/1_intermediate/additional_data/1_counties.R
 county_table_loc <- here("data", "4_for_analysis", "additional_data", "counties.csv")
 
-# GSA shapefile
-# https://sgma.water.ca.gov/webgis/index.jsp?appid=gasmaster&rz=true
-gsa_loc <- here("data", "1_raw", "GSA", "GSA.shp")
-
-# a table with the location of a pixel and the GSA it belongs in
-# created in 1_generate_datasets/1_intermediate/additional_data/3_GSA.R
-gsa_table_loc <- here("data", "4_for_analysis", "additional_data", "GSA.csv")
-
 # subbasin shapefile
 # https://geodata.lib.utexas.edu/catalog/stanford-kt110sd4399
 basin_loc <- here("data", "1_raw", "subbasins", "basin.shp")
@@ -180,15 +125,6 @@ basin_loc <- here("data", "1_raw", "subbasins", "basin.shp")
 # a table with the location of a pixel and the basin it belongs in
 # created in 1_generate_datasets/1_intermediate/additional_data/5_basin.R
 basin_table_loc <- here("data", "4_for_analysis", "additional_data", "basin.csv")
-
-# ET0 zone shapefile from CIMIS
-# https://cimis.water.ca.gov/App_Themes/images/etozonemap.jpg. 
-# Obtained through personal correspondance with Ricardo.Trezza@water.ca.gov and DWRCIMISPublicContact@water.ca.gov
-et0_zone_loc <- here("data", "1_raw", "CIMIS_ETo", "Zones_eto_utm10_nad27.shp")
-
-# a table with the location of a pixel and the ET0 zone it belongs in
-# created in 1_generate_datasets/1_intermediate/additional_data/4_et0_zone.R
-et0_zone_table_loc <- here("data", "4_for_analysis", "additional_data", "ET0_zone.csv")
 
 # A table with the location of a pixel and its crop type, sub crop type, and if multiple crops are grown on that pixel.
 # Pure pixels only. 
@@ -229,15 +165,6 @@ usgs_irr_path <- here("data", "1_raw", "USGS_waterdata")
 # CalSIMETAW water use comparisons
 # https://data.ca.gov/dataset/cal-simetaw-unit-values
 calsimetaw_loc <- here("data", "1_raw", "CalSIMETAW", "calsimetaw.csv")
-
-# USDA/NASS crop stats
-# https://www.nass.usda.gov/Quick_Stats/Ag_Overview/stateOverview.php?state=CALIFORNIA
-# manual changes to remove subcategory information/turn into csv
-crop_value_loc <- here("data", "1_raw", "USDA_NASS_State_of_Ag", "crop_value.csv")
-
-# water buffer dataset
-# created in 3.5_vegetation_near_water.R
-water_buffer_path <- here("data", "2_intermediate", "vegetation")
 
 # fallow train, validation, and test locations
 # splits created in 5_clean_and_split_fallow.R
