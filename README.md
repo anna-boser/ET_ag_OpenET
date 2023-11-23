@@ -44,11 +44,11 @@ This section demonstrates how to run one of the scripts in this repository. We w
 
 First, ensure you have installed R and all of the libraries listed at the top of the file by opening an R secion and using the install.packages(`"package"`) command (with `"package"` replaced by the name of the actual package). Next, open `4_scenarios.Rmd` in your IDE of choice (we recommend RStudio for working with R). 
 
-Because the data we will use in the `demo` folder as opposed to an experiment folder which is where the data would be had you generated it using the pipeline, we need to make some slight modifications in the setion `Read in the data` before running the code: 
+Because the data we will use in the `demo` folder as opposed to an experiment folder which is where the data would be had you generated it using the pipeline, we need to make some slight modifications in the section `Read in the data` before running the code: 
 
 ```R
+# Replace experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name) with:
 experiment_path <- here("demo")
-# changed from experiment_path <- here("data", "4_for_analysis", "ML_outputs",  "experiments", experiment_name)
 ```
 
 Then, if you are in RStudio, you can press the "Knit" button. Otherwise, run the following command in your terminal, ensuring your working directory is this repository. 
