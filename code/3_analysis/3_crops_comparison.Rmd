@@ -164,31 +164,32 @@ boxplot <- filter(data, cropnames != "Young Perennial") %>%
 
 filter(bardata, type == "ag_ET", cropnames != "Young Perennial") %>% 
   ggplot(aes(x = reorder(cropnames, ET))) + 
-  geom_linerange(data=filter(bardata, type == "ag_ET", cropnames != "Young Perennial"), aes(ymax = min, ymin = max), color = "#009966") + 
+  geom_linerange(data=filter(bardata, type == "ag_ET", cropnames != "Young Perennial"), aes(ymax = min, ymin = max), color = "#00618e") + 
   geom_boxplot(data=boxplot, aes(lower = percentile_25, upper = percentile_75, middle = percentile_50, ymin = percentile_05, ymax = percentile_95), width=.7, color = "grey50", stat="identity") + 
   geom_col(data = filter(bardata, type != "ET", cropnames != "Young Perennial"), aes(y = ET, fill = type), alpha = .6) +
-  scale_fill_manual(values=c(ag_ET="#009966", ET_pred="darkgoldenrod"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Naturally-occurring ET")) + 
+  scale_fill_manual(values=c(ag_ET="#00618e", ET_pred="#ede1c5"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Naturally-occurring ET")) + 
   geom_col(data = filter(bardata, type == "ET", cropnames != "Young Perennial"), aes(y = ET, color = type), size=.3, alpha = 0) +
   scale_color_manual(values=c("black"), labels = c("Total ET")) + 
   # geom_linerange(data = filter(bardata, type == "ET", cropnames != "Young Perennial"), aes(ymax = min, ymin = max), size=1.1, color = "navyblue") + 
-  geom_linerange(aes(ymax = min, ymin = max), size=1.1, color = "#009966") + 
+  geom_linerange(aes(ymax = min, ymin = max), size=1.1, color = "#00618e") + 
   ylab("mm/year") + 
   theme_bw() + 
   labs(fill='') + 
   # ylim(c(-35, 165)) + 
-  theme(axis.text.x = element_text(angle = 30, hjust=1, size=11), 
+  theme(axis.text.x = element_text(angle = 30, hjust=1, size=7), 
         axis.title.x=element_blank(), 
         axis.ticks.x=element_blank(), 
-        axis.text.y = element_text(size=11), 
-        axis.title.y = element_text(size=11), 
+        axis.text.y = element_text(size = 6),
+        strip.text = element_text(size = 7),
+        legend.text = element_text(size = 7), # Set legend text size to 7pt
+        axis.title.y = element_text(size = 7),
         legend.position = "top", 
         legend.direction="horizontal", 
-        legend.title=element_blank(), 
-        legend.text=element_text(size=11))
+        legend.title=element_blank())
 
 ggsave(here(experiment_path, "Figure_2.pdf"), 
-       width = 17.8,
-       height = 11.1,
+       width = 18,
+       height = 11.2,
        units = "cm")
 ```
 
@@ -219,13 +220,13 @@ fwrite(crop_group, here(experiment_path, "crop_group_table.csv"))
 # The original bardata without boxplot
 
 ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(cropnames, ET))) +
-  geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "#009966") +
+  geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "#00618e") +
   geom_col(data = filter(bardata, type != "ET"), aes(y = ET, fill = type), alpha = .6) +
-  scale_fill_manual(values=c(ag_ET="#009966", ET_pred="darkgoldenrod"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Simulated natural ET")) +
+  scale_fill_manual(values=c(ag_ET="#00618e", ET_pred="#ede1c5"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Simulated natural ET")) +
   geom_col(data = filter(bardata, type == "ET"), aes(y = ET, color = type), alpha = 0) +
   scale_color_manual(values=c("navyblue"), labels = c("Total ET")) +
   geom_linerange(data = filter(bardata, type == "ET"), aes(ymax = min, ymin = max), color = "navyblue") +
-  geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "#009966") +
+  geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "#00618e") +
   ylab("mm/year") +
   theme_bw() +
   labs(fill='') +
@@ -239,10 +240,10 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(cropnames, ET))) +
 # boxplot to show spread in how much a given crop consumes
 
 ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(cropnames, ET))) + 
-  geom_linerange(aes(ymax = min, ymin = max), color = "#009966") +
+  geom_linerange(aes(ymax = min, ymin = max), color = "#00618e") +
   geom_boxplot(data=data, aes(y=ag_ET), outlier.size = .5, outlier.alpha = .002) + 
-  geom_col(aes(y = ET), fill = "#009966", alpha = 0.6) + 
-  geom_linerange(aes(ymax = min, ymin = max), color = "#009966") +
+  geom_col(aes(y = ET), fill = "#00618e", alpha = 0.6) + 
+  geom_linerange(aes(ymax = min, ymin = max), color = "#00618e") +
   theme_bw() + 
   labs(fill='') + 
   ylab("Agricultural ET (mm/year)") + 
@@ -330,28 +331,31 @@ boxplot <- filter(data, subcropnames != "Young Perennial") %>%
             percentile_95 = quantile(ag_ET, .95))
 
 ggplot(filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(x = reorder(subcropnames, ET))) + 
-  geom_linerange(data = filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), color = "#009966") + 
+  geom_linerange(data = filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), color = "#00618e") + 
   geom_boxplot(data=boxplot, aes(lower = percentile_25, upper = percentile_75, middle = percentile_50, ymin = percentile_05, ymax = percentile_95), color = "grey50", stat="identity") + 
   geom_col(data = filter(bardata, type != "ET", subcropnames != "Young Perennial"), aes(y = ET, fill = type), alpha = .6) +
-  scale_fill_manual(values=c(ag_ET="#009966", ET_pred="darkgoldenrod"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Naturally-occurring ET")) + 
+  scale_fill_manual(values=c(ag_ET="#00618e", ET_pred="#ede1c5"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Naturally-occurring ET")) + 
   geom_col(data = filter(bardata, type == "ET", subcropnames != "Young Perennial"), aes(y = ET, color = type), alpha = 0, size = 0.3) +
   scale_color_manual(values=c("black"), labels = c("Total ET")) + 
   # geom_linerange(data = filter(bardata, type == "ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), size = 1, color = "navyblue") + 
-  geom_linerange(data = filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), size = 1, color = "#009966") + 
+  geom_linerange(data = filter(bardata, type == "ag_ET", subcropnames != "Young Perennial"), aes(ymax = min, ymin = max), size = 1, color = "#00618e") + 
   ylab("mm/year") + 
   theme_bw() + 
   labs(fill='') + 
   # ylim(c(-45, 175)) + 
-  theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.5), 
+  theme(axis.text.x = element_text(angle = 90, hjust=1, vjust=.5, size = 7), 
         axis.title.x=element_blank(), 
-        # axis.ticks.x=element_blank(), 
+        axis.text.y = element_text(size = 7),
+        strip.text = element_text(size = 7),
+        legend.text = element_text(size = 7), # Set legend text size to 7pt
+        axis.title.y = element_text(size = 7),
         legend.position = "top", 
         legend.direction="horizontal", 
         legend.title=element_blank())
 
 ggsave(here(experiment_path, "Figure_S5.pdf"), 
-       width = 17.8,
-       height = 11.1,
+       width = 18,
+       height = 11.2,
        units = "cm")
 ```
 
@@ -380,13 +384,13 @@ fwrite(crop_type, here(experiment_path, "crop_type_table.csv"))
 # scrap plots
 ```{r, eval = FALSE, render=FALSE}
 ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(subcropnames, ET))) + 
-  geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "#009966") + 
+  geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "#00618e") + 
   geom_col(data = filter(bardata, type != "ET"), aes(y = ET, fill = type), alpha = .6) +
-  scale_fill_manual(values=c(ag_ET="#009966", ET_pred="darkgoldenrod"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Simulated natural ET")) + 
+  scale_fill_manual(values=c(ag_ET="#00618e", ET_pred="#ede1c5"), breaks=c("ag_ET","ET_pred"), labels = c("Agricultural ET", "Simulated natural ET")) + 
   geom_col(data = filter(bardata, type == "ET"), aes(y = ET, color = type), alpha = 0) +
   scale_color_manual(values=c("navyblue"), labels = c("Total ET")) + 
   geom_linerange(data = filter(bardata, type == "ET"), aes(ymax = min, ymin = max), color = "navyblue") + 
-  geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "#009966") + 
+  geom_linerange(data = filter(bardata, type == "ag_ET"), aes(ymax = min, ymin = max), color = "#00618e") + 
   ylab("mm/year") + 
   theme_bw() + 
   labs(fill='') + 
@@ -401,10 +405,10 @@ ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(subcropnames, ET))) +
 # boxplot to show spread in how much a given crop consumes
 
 ggplot(filter(bardata, type == "ag_ET"), aes(x = reorder(subcropnames, ET))) + 
-  geom_linerange(aes(ymax = min, ymin = max), color = "#009966") +
+  geom_linerange(aes(ymax = min, ymin = max), color = "#00618e") +
   geom_boxplot(data=data, aes(y=ag_ET), outlier.size = .5, outlier.alpha = .002) + 
-  geom_col(aes(y = ET), fill = "#009966", alpha = 0.6) + 
-  geom_linerange(aes(ymax = min, ymin = max), color = "#009966") +
+  geom_col(aes(y = ET), fill = "#00618e", alpha = 0.6) + 
+  geom_linerange(aes(ymax = min, ymin = max), color = "#00618e") +
   theme_bw() + 
   labs(fill='') + 
   ylab("Agricultural ET (mm/year)") + 

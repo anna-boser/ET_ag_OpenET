@@ -180,9 +180,13 @@ ggplot(fin_data) +
   xlim(c(min(fin_data$CalSIMETAW, fin_data$ET_ET_pred), max(fin_data$CalSIMETAW, fin_data$ET_ET_pred))) +
   ylim(c(min(fin_data$CalSIMETAW, fin_data$ET_ET_pred), max(fin_data$CalSIMETAW, fin_data$ET_ET_pred))) +
   guides(color=guide_legend(title="Crop type")) + 
-  theme(axis.title.x = element_text(size=12), 
-        axis.title.y = element_text(size=12), 
-        strip.text.x = element_text(size=12))
+  theme(axis.text.x = element_text(size = 10.5),
+        axis.text.y = element_text(size = 10.5),
+        strip.text = element_text(size = 10.5),
+        legend.text = element_text(size = 10.5), # Set legend text size to 7pt
+        legend.title = element_text(size = 10.5),# Set legend title size to 7pt
+        axis.title.x = element_text(size = 10.5), # Set x-axis title size to 7pt
+        axis.title.y = element_text(size = 10.5)) # because I have to save as size 27 instead of 18, 7*1.5 = 10.5 which will appear 7
 
 ggsave(here(experiment_path, "Figure_S6.pdf"), 
        width = 27,

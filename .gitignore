@@ -9,7 +9,7 @@ data/*
 *.out
 *.sh
 code/2_counterfactual/__pycache__/*
-code/3_analysis/2_plots_and_analysis/*.html
+code/3_analysis/*.html
 figs_and_data/*
 */MAC_by_zipcode.R
 MAC_by_zipcode.R

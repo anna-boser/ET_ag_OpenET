@@ -84,16 +84,22 @@ vario_ET2 <- rbind(vario_ET, vario_ag_ET)
 ggplot(vario_ET2) + 
   geom_line(aes(x = dist, y = gamma, color = type)) + 
   geom_point(aes(x = dist, y = gamma, color = type)) + 
-  scale_color_manual(values=c("#009966", "black")) + 
+  scale_color_manual(values=c("#00618e", "black")) + 
   theme_bw() + 
   theme(legend.position = c(.2, .85), 
-        legend.title=element_blank()) + 
+        legend.title=element_blank(), 
+        axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
+        strip.text = element_text(size = 7),
+        legend.text = element_text(size = 6), # Set legend text size to 7pt
+        axis.title.x = element_text(size = 7), # Set x-axis title size to 7pt
+        axis.title.y = element_text(size = 7)) + 
   xlab("Distance (km)") + 
   ylab("Gamma")
 
 ggsave(here(experiment_path, "Figure_S12.pdf"), 
-       width = 17.8,
-       height = 11.1,
+       width = 12,
+       height = 8,
        units = "cm")
   
 ```
@@ -170,29 +176,36 @@ ggplot() +
   geom_sf(data = counties, fill = "grey", color=alpha("white",1), size = .2) + 
   geom_raster(data = data, aes(x=x, y=y, fill=ET*scalar)) +
   facet_grid(cols=vars(type), labeller = labeller(type = new.labs)) +
-  scale_fill_gradientn(name="ET (mm/year)", colours = c("darkgoldenrod2", "khaki1", "lightgreen",  "deepskyblue","mediumblue", "navyblue", "midnightblue", "black"), limits = c(-391, 2346), breaks = seq(0, 2000, by = 1000)) +
+  scale_fill_gradientn(name="ET (mm/year)", colours = c("white", "#FFFFCC", "#A1DAB4",  "#41B6C4", "#2C7FB8", "#253494", "#081D58", "#081D58"), limits = c(-391, 2346), breaks = seq(0, 2000, by = 1000)) +
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   xlim(c(minlong, maxlong)) + 
   ylim(c(minlat, maxlat)) + 
   annotation_scale(data = tibble::tibble(type = as.factor("ET")), text_cex=.6, height=unit(0.2, "cm")) + 
   theme_classic() +
+  scale_x_continuous(name = "Longitude", 
+                     limits = c(minlong, maxlong),
+                     breaks = round(seq(minlong + 1, maxlong + 1, by = 3))) + 
+  scale_y_continuous(name = "Latitude", 
+                     limits = c(minlat, maxlat),
+                     breaks = round(seq(minlat + 1, maxlat + 1, by = 2))) + 
   theme(legend.position = c(0.934, 0.867), 
         legend.direction = "horizontal",
-        legend.title = element_text(size = 8), 
-        legend.text = element_text(size = 7), 
-        axis.title.y=element_blank(),
-        axis.text.y=element_blank(),
-        axis.ticks.y=element_blank(), 
-        axis.title.x=element_blank(),
-        axis.text.x=element_blank(),
-        axis.ticks.x=element_blank(), 
-        strip.text.x = element_text(size = 8), 
+        axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
+        strip.text = element_text(size = 7),
+        legend.text = element_text(size = 6), # Set legend text size to 7pt
+        legend.title = element_text(size = 7),# Set legend title size to 7pt
+        axis.title.x = element_text(size = 7), # Set x-axis title size to 7pt
+        axis.title.y = element_text(size = 7),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        axis.ticks = element_line(), 
         legend.key.width = unit(dev.size()[1] / 40, "inches")) + 
   guides(fill = guide_colourbar(title.position="top", title.hjust = 0.5, override.aes = list(size = 0.5))) 
 
 ggsave(here(experiment_path, "Figure_1.pdf"), 
-       width = 17.8,
-       height = 8.9,
+       width = 18,
+       height = 9,
        units = "cm")
 ```
 

@@ -236,13 +236,23 @@ plotted_datasets <- ggplot() +
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   new_scale_fill() +
   geom_raster(data = data[sample(nrow(data), size = nrow(data), replace = FALSE),], aes(x=x, y=y, fill=ag_ET_year), alpha=1) +
-  scale_fill_gradientn(name="Agricultural ET (mm/year)", colours = c("darkgoldenrod2", "khaki1", "lightgreen",  "deepskyblue","mediumblue", "navyblue", "midnightblue", "black"), limits = c(-391, 2346), breaks = seq(0, 2000, by = 1000)) +
-  theme_void() + 
+  scale_fill_gradientn(name="Agricultural ET (mm/year)", colours = c("white", "#FFFFCC", "#A1DAB4",  "#41B6C4", "#2C7FB8", "#253494", "#081D58", "#081D58"), limits = c(-391, 2346), breaks = seq(0, 2000, by = 1000)) +
+  theme_classic() +
+  scale_x_continuous(name = "Longitude", 
+                     limits = c(minlong, maxlong),
+                     breaks = round(seq(minlong + 1, maxlong + 1, by = 3))) + 
+  scale_y_continuous(name = "Latitude", 
+                     limits = c(minlat, maxlat),
+                     breaks = round(seq(minlat + 1, maxlat + 1, by = 2))) + 
   annotation_scale() + 
-  xlim(c(minlong, maxlong)) + 
-  ylim(c(minlat, maxlat)) + 
-  theme(legend.position = c(.8, .82), 
+  theme(legend.position = c(.8, .9), 
         legend.direction = "horizontal", 
+        axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
+        strip.text = element_text(size = 7),
+        legend.text = element_text(size = 6), # Set legend text size to 7pt
+        axis.title.x = element_text(size = 7), # Set x-axis title size to 7pt
+        axis.title.y = element_text(size = 7),
         legend.title = element_blank(),
         legend.margin = margin(18))
 
@@ -258,15 +268,29 @@ cv_data <- filter(counties_irrigation, n > 50000)
 plotted_eff <- ggplot() + 
   geom_sf(data = counties, fill = "grey", color=alpha("white",1), size = .2) + 
   geom_sf(data = cv_data, aes(fill = irrigation_efficiency), color=alpha("black",.2), size = .2) + 
-  geom_text(data = cv_data, aes(x = lon, y = lat, label = round(irrigation_efficiency, 0)), size = 3) + 
+  geom_text(data = cv_data, aes(x = lon, y = lat, label = round(irrigation_efficiency, 0)), size = 2.2) + 
   scale_fill_gradient2(name = "Irrigation efficiency (%)", low = "red", mid = "white", high = "#70AD47", limits = c(0, 100)) + # alternatve top limit: max(cv_data$irrigation_efficiency)
   geom_sf(data = study_area, fill=alpha("red",0), color = "black", size = .2) + 
   xlim(c(minlong, maxlong)) + 
   ylim(c(minlat, maxlat)) + 
-  theme_void() + 
+  theme_classic() +
+  scale_x_continuous(name = "Longitude", 
+                     limits = c(minlong, maxlong),
+                     breaks = round(seq(minlong + 1, maxlong + 1, by = 3))) + 
+  scale_y_continuous(name = "", 
+                     limits = c(minlat, maxlat),
+                     breaks = c()) + 
   theme(legend.position = c(.805, .85), 
         legend.direction = "horizontal", 
-        legend.title=element_text(size=10)) + 
+        axis.text.x = element_text(size = 6),
+        strip.text = element_text(size = 7),
+        legend.text = element_text(size = 6), # Set legend text size to 7pt
+        legend.title = element_text(size = 7),# Set legend title size to 7pt
+        axis.title.x = element_text(size = 7), # Set x-axis title size to 7pt
+        axis.title.y = element_text(size = 7),
+        axis.text.y = element_blank(),    # Remove y-axis text
+        axis.ticks.y = element_blank(),   # Remove y-axis ticks
+        axis.line.y = element_blank()) + 
   guides(fill = guide_colourbar(title.position="top", title.hjust = 0.5))#, override.aes = list(size = 0.5))) 
 
 plotted_eff
@@ -276,13 +300,13 @@ plotted_eff
 theme_set(theme_pubr())
 
 figure <- ggarrange(plotted_datasets, plotted_eff, 
-                    labels = c("a", "b"),
+                    # labels = c("a", "b"),
                     ncol = 2, nrow = 1)
 figure
 
 ggsave(here(experiment_path, "Figure_4.pdf"), 
-       width = 17.8,
-       height = 12.1,
+       width = 18,
+       height = 12.2,
        units = "cm")
 ```
 
@@ -311,9 +335,15 @@ ggplot(combo, aes(x = reorder(NAME, -lat))) +
   geom_point(data = cv_data, aes(y = irrigation_efficiency, fill = none), color = "red", size = 3, shape = "cross") + 
   # geom_linerange(data = cv_data, aes(ymin = irrigation_efficiency_min, ymax = irrigation_efficiency_max, fill = none), color = "red") + 
   theme_bw() + 
-  theme(legend.position = c(.3, .75), 
-        axis.text.x = element_text(angle = 30, hjust=1), 
-        legend.direction = "horizontal") + 
+  theme(legend.position = c(.25, .75), 
+        axis.text.x = element_text(angle = 30, hjust=1, size = 7), 
+        legend.direction = "horizontal", 
+        axis.text.y = element_text(size = 6),
+        strip.text = element_text(size = 7),
+        legend.text = element_text(size = 6), # Set legend text size to 7pt
+        legend.title = element_text(size = 7),# Set legend title size to 7pt
+        axis.title.x = element_text(size = 7), # Set x-axis title size to 7pt
+        axis.title.y = element_text(size = 7)) + 
   xlab("County") +
   ylab("Irrigation efficiency (%)") + 
   guides(shape=guide_legend(title="Agricultural ET year"), 
@@ -321,8 +351,8 @@ ggplot(combo, aes(x = reorder(NAME, -lat))) +
          fill=guide_legend(title="Average over all years"))
 
 ggsave(here(experiment_path, "Figure_S8.pdf"), 
-       width = 17.8,
-       height = 11.1,
+       width = 16,
+       height = 10,
        units = "cm")
 ```
 
@@ -354,18 +384,25 @@ counties_irrigation %>%
   geom_smooth(aes(x = theoretical_efficiency, y = irrigation_efficiency), method = lm) + 
    geom_linerange(aes(x = theoretical_efficiency, ymin = irrigation_efficiency_min, ymax = irrigation_efficiency_max)) + 
   geom_abline(intercept=0,slope=1, color="red") + 
-  geom_point(aes(x = theoretical_efficiency, y = irrigation_efficiency, color=lat), size = 2) +
+  geom_point(aes(x = theoretical_efficiency, y = irrigation_efficiency, color=lat), size = 1.5) +
   scale_color_distiller(palette="RdYlBu", direction=1, name = "Latitude") + 
   theme_bw() + 
   coord_fixed() + 
   xlab("Theoretical irrigation efficiency (%)") + 
   ylab("Empirical irrigation efficiency (%)") +
   xlim(c(min(counties_irrigation$theoretical_efficiency, counties_irrigation$irrigation_efficiency), max(counties_irrigation$theoretical_efficiency, counties_irrigation$irrigation_efficiency))) +
-  ylim(c(min(counties_irrigation$theoretical_efficiency, counties_irrigation$irrigation_efficiency), max(counties_irrigation$theoretical_efficiency, counties_irrigation$irrigation_efficiency)))
+  ylim(c(min(counties_irrigation$theoretical_efficiency, counties_irrigation$irrigation_efficiency), max(counties_irrigation$theoretical_efficiency, counties_irrigation$irrigation_efficiency))) +
+  theme(axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
+        strip.text = element_text(size = 7),
+        legend.text = element_text(size = 6), # Set legend text size to 7pt
+        legend.title = element_text(size = 7),# Set legend title size to 7pt
+        axis.title.x = element_text(size = 7), # Set x-axis title size to 7pt
+        axis.title.y = element_text(size = 7))
 
 ggsave(here(experiment_path, "Figure_S7.pdf"), 
-       width = 11.4,
-       height = 10,
+       width = 12,
+       height = 11,
        units = "cm")
 ```
 

@@ -189,7 +189,13 @@ ggplot(ET_df) +
   ylab("Agricultural ET (mm/month)") + 
   theme_bw() + 
   theme(legend.position = c(.8, .25), 
-        axis.text.x = element_text(angle = 20, hjust = 1))
+        axis.text.x = element_text(angle = 20, hjust = 1, size = 7), 
+        axis.text.y = element_text(size = 6),
+        strip.text = element_text(size = 7),
+        legend.text = element_text(size = 6), # Set legend text size to 7pt
+        legend.title = element_text(size = 7),# Set legend title size to 7pt
+        axis.title.x = element_text(size = 7), # Set x-axis title size to 7pt
+        axis.title.y = element_text(size = 7))
 
 ggsave(here(experiment_path, paste0("Figure_S_Orchard_age.pdf")), 
        width = 17.8,

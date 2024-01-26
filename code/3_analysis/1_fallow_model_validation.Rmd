@@ -85,17 +85,17 @@ ggplot(data_year) +
   ylab("Observed ET (mm/year)") +
     xlim(c(0,85*scalar)) + 
     ylim(c(0,85*scalar)) + 
-  theme(axis.text.x = element_text(size = 5),
-        axis.text.y = element_text(size = 5),
+  theme(axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
         strip.text = element_text(size = 7),
-        legend.text = element_text(size = 5), # Set legend text size to 7pt
+        legend.text = element_text(size = 6), # Set legend text size to 7pt
         legend.title = element_text(size = 7),# Set legend title size to 7pt
-        axis.title.x = element_text(size = 6), # Set x-axis title size to 7pt
-        axis.title.y = element_text(size = 6))
+        axis.title.x = element_text(size = 7), # Set x-axis title size to 7pt
+        axis.title.y = element_text(size = 7))
 
 ggsave(here(experiment_path, "Figure_S1.pdf"), 
-       width = 8.8,
-       height = 8.8,
+       width = 12,
+       height = 12,
        units = "cm")
 
 write("yearly stats" ,file=report,append=TRUE)
@@ -124,20 +124,20 @@ loc_df %>%
   geom_point(aes(x=x, y=y, col=ET), size = .1) + 
   facet_grid(cols = vars(type), labeller = labeller(type = new.labs)) + 
   scale_color_distiller(name="ET (mm/year)", palette="YlGnBu", direction=1) + 
-  theme_minimal() +
+  theme_classic() +
   scale_x_continuous(name = "Longitude", 
                      limits = c(minlong, maxlong),
                      breaks = round(seq(minlong + 1, maxlong + 1, by = 3))) + 
   scale_y_continuous(name = "Latitude", 
                      limits = c(minlat, maxlat),
                      breaks = round(seq(minlat + 1, maxlat + 1, by = 2))) + 
-  theme(axis.text.x = element_text(size = 5),
-        axis.text.y = element_text(size = 5),
+  theme(axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
         strip.text = element_text(size = 7),
-        legend.text = element_text(size = 5), # Set legend text size to 7pt
+        legend.text = element_text(size = 6), # Set legend text size to 7pt
         legend.title = element_text(size = 7),# Set legend title size to 7pt
-        axis.title.x = element_text(size = 6), # Set x-axis title size to 7pt
-        axis.title.y = element_text(size = 6),
+        axis.title.x = element_text(size = 7), # Set x-axis title size to 7pt
+        axis.title.y = element_text(size = 7),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         axis.ticks = element_line())
@@ -162,27 +162,27 @@ loc_df %>% filter(type %in% c("Bias")) %>%
   xlim(c(minlong, maxlong)) + 
   ylim(c(minlat, maxlat)) + 
   theme(legend.position = c(.87, .84)) + 
-  theme_minimal() +
+  theme_classic() +
   scale_x_continuous(name = "Longitude", 
                      limits = c(minlong, maxlong),
                      breaks = round(seq(minlong + 1, maxlong + 1, by = 3))) + 
   scale_y_continuous(name = "Latitude", 
                      limits = c(minlat, maxlat),
                      breaks = round(seq(minlat + 1, maxlat + 1, by = 2))) + 
-  theme(axis.text.x = element_text(size = 5),
-        axis.text.y = element_text(size = 5),
+  theme(axis.text.x = element_text(size = 6),
+        axis.text.y = element_text(size = 6),
         strip.text = element_text(size = 7),
-        legend.text = element_text(size = 5), # Set legend text size to 7pt
+        legend.text = element_text(size = 6), # Set legend text size to 7pt
         legend.title = element_text(size = 7),# Set legend title size to 7pt
-        axis.title.x = element_text(size = 6), # Set x-axis title size to 7pt
-        axis.title.y = element_text(size = 6),
+        axis.title.x = element_text(size = 7), # Set x-axis title size to 7pt
+        axis.title.y = element_text(size = 7),
         panel.grid.major = element_blank(),
         panel.grid.minor = element_blank(),
         axis.ticks = element_line())
 
 ggsave(here(experiment_path, "Figure_S3.pdf"), 
-       width = 8.8,
-       height = 10,
+       width = 11.2,
+       height = 11.2,
        units = "cm")
 ```
 
@@ -255,16 +255,16 @@ ggplot(ts, aes(x = month)) +
   theme_bw() + 
   theme(legend.position = "top", 
     legend.direction = "horizontal", 
-    axis.text.x = element_text(size = 5),
-    axis.text.y = element_text(size = 5),
+    axis.text.x = element_text(size = 6),
+    axis.text.y = element_text(size = 6),
     strip.text = element_text(size = 7),
-    legend.text = element_text(size = 5), # Set legend text size to 7pt
+    legend.text = element_text(size = 6), # Set legend text size to 7pt
     legend.title = element_text(size = 7),# Set legend title size to 7pt
-    axis.title.x = element_text(size = 6), # Set x-axis title size to 7pt
-    axis.title.y = element_text(size = 6)) # move legend to the top to allow more space for the plot
+    axis.title.x = element_text(size = 7), # Set x-axis title size to 7pt
+    axis.title.y = element_text(size = 7)) # move legend to the top to allow more space for the plot
 
 ggsave(here(experiment_path, "Figure_S4.pdf"), 
-       width = 18,
-       height = 11.2,
+       width = 12,
+       height = 8,
        units = "cm")
 ```
