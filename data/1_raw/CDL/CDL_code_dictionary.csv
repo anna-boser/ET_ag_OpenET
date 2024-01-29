@@ -1,0 +1,134 @@
+"code","class","cultivated","group","double_crop","counterfactual"
+1,"Corn","Cultivated","Cereals",FALSE,0
+2,"Cotton","Cultivated","Fibre Crops",FALSE,0
+3,"Rice","Cultivated","Cereals",FALSE,0
+4,"Sorghum","Cultivated","Cereals",FALSE,0
+5,"Soybeans","Cultivated","Legumes",FALSE,0
+6,"Sunflower","Cultivated","Oil Crops",FALSE,0
+10,"Peanuts","Cultivated","Legumes",FALSE,0
+11,"Tobacco","Cultivated","Other",FALSE,0
+12,"Sweet Corn","Cultivated","Cereals",FALSE,0
+13,"Pop or Orn Corn","Cultivated","Cereals",FALSE,0
+14,"Mint","Cultivated","Vegetables",FALSE,0
+21,"Barley","Cultivated","Cereals",FALSE,0
+22,"Durum Wheat","Cultivated","Cereals",FALSE,0
+23,"Spring Wheat","Cultivated","Cereals",FALSE,0
+24,"Winter Wheat","Cultivated","Cereals",FALSE,0
+25,"Other Small Grains","Cultivated","Cereals",FALSE,0
+26,"Dbl Crop WinWht/Soybeans","Cultivated","Other",TRUE,0
+27,"Rye","Cultivated","Forages",FALSE,0
+28,"Oats","Cultivated","Cereals",FALSE,0
+29,"Millet","Cultivated","Cereals",FALSE,0
+30,"Speltz","Cultivated","Cereals",FALSE,0
+31,"Canola","Cultivated","Oil Crops",FALSE,0
+32,"Flaxseed","Cultivated","Oil Crops",FALSE,0
+33,"Safflower","Cultivated","Oil Crops",FALSE,0
+34,"Rape Seed","Cultivated","Oil Crops",FALSE,0
+35,"Mustard","Cultivated","Other",FALSE,0
+36,"Alfalfa","Cultivated","Forages",FALSE,0
+38,"Camelina","Cultivated","Oil Crops",FALSE,0
+39,"Buckwheat","Cultivated","Cereals",FALSE,0
+41,"Sugarbeets","Cultivated","Roots and Tubers",FALSE,0
+42,"Dry Beans","Cultivated","Legumes",FALSE,0
+43,"Potatoes","Cultivated","Roots and Tubers",FALSE,0
+44,"Other Crops","Cultivated","Other",FALSE,0
+45,"Sugarcane","Cultivated","Sugarcane",FALSE,0
+46,"Sweet Potatoes","Cultivated","Roots and Tubers",FALSE,0
+47,"Misc Vegs & Fruits","Cultivated","Vegetables",FALSE,0
+48,"Watermelons","Cultivated","Vegetables",FALSE,0
+49,"Onions","Cultivated","Vegetables",FALSE,0
+50,"Cucumbers","Cultivated","Vegetables",FALSE,0
+51,"Chick Peas","Cultivated","Legumes",FALSE,0
+52,"Lentils","Cultivated","Legumes",FALSE,0
+53,"Peas","Cultivated","Legumes",FALSE,0
+54,"Tomatoes","Cultivated","Vegetables",FALSE,0
+55,"Caneberries","Cultivated","Grapes and Berries",FALSE,0
+56,"Hops","Cultivated","Grapes and Berries",FALSE,0
+57,"Herbs","Cultivated","Other",FALSE,0
+58,"Clover/Wildflowers","Cultivated","Forages",FALSE,0
+61,"Fallow/Idle Cropland","Cultivated","Fallow/Idle",FALSE,0
+66,"Cherries","Cultivated","Fruit/Nut Trees",FALSE,0
+67,"Peaches","Cultivated","Fruit/Nut Trees",FALSE,0
+68,"Apples","Cultivated","Fruit/Nut Trees",FALSE,0
+69,"Grapes","Cultivated","Grapes and Berries",FALSE,0
+70,"Christmas Trees","Cultivated","Other",FALSE,0
+71,"Other Tree Crops","Cultivated","Other",FALSE,0
+72,"Citrus","Cultivated","Fruit/Nut Trees",FALSE,0
+74,"Pecans","Cultivated","Fruit/Nut Trees",FALSE,0
+75,"Almonds","Cultivated","Fruit/Nut Trees",FALSE,0
+76,"Walnuts","Cultivated","Fruit/Nut Trees",FALSE,0
+77,"Pears","Cultivated","Fruit/Nut Trees",FALSE,0
+204,"Pistachios","Cultivated","Fruit/Nut Trees",FALSE,0
+205,"Triticale","Cultivated","Cereals",FALSE,0
+206,"Carrots","Cultivated","Vegetables",FALSE,0
+207,"Asparagus","Cultivated","Vegetables",FALSE,0
+208,"Garlic","Cultivated","Vegetables",FALSE,0
+209,"Cantaloupes","Cultivated","Vegetables",FALSE,0
+210,"Prunes","Cultivated","Fruit/Nut Trees",FALSE,0
+211,"Olives","Cultivated","Fruit/Nut Trees",FALSE,0
+212,"Oranges","Cultivated","Fruit/Nut Trees",FALSE,0
+213,"Honeydew Melons","Cultivated","Vegetables",FALSE,0
+214,"Broccoli","Cultivated","Vegetables",FALSE,0
+215,"Avocado","Cultivated","Fruit/Nut Trees",FALSE,0
+216,"Peppers","Cultivated","Vegetables",FALSE,0
+217,"Pomegranates","Cultivated","Fruit/Nut Trees",FALSE,0
+218,"Nectarines","Cultivated","Fruit/Nut Trees",FALSE,0
+219,"Greens","Cultivated","Vegetables",FALSE,0
+220,"Plums","Cultivated","Fruit/Nut Trees",FALSE,0
+221,"Strawberries","Cultivated","Vegetables",FALSE,0
+222,"Squash","Cultivated","Vegetables",FALSE,0
+223,"Apricots","Cultivated","Fruit/Nut Trees",FALSE,0
+224,"Vetch","Cultivated","Legumes",FALSE,0
+225,"Dbl Crop WinWht/Corn","Cultivated","Cereals",TRUE,0
+226,"Dbl Crop Oats/Corn","Cultivated","Cereals",TRUE,0
+227,"Lettuce","Cultivated","Vegetables",FALSE,0
+228,"Dbl Crop Triticale/Corn","Cultivated","Cereals",TRUE,0
+229,"Pumpkins","Cultivated","Vegetables",FALSE,0
+230,"Dbl Crop Lettuce/Durum Wht","Cultivated","Other",TRUE,0
+231,"Dbl Crop Lettuce/Cantaloupe","Cultivated","Vegetables",TRUE,0
+232,"Dbl Crop Lettuce/Cotton","Cultivated","Other",TRUE,0
+233,"Dbl Crop Lettuce/Barley","Cultivated","Other",TRUE,0
+234,"Dbl Crop Durum Wht/Sorghum","Cultivated","Cereals",TRUE,0
+235,"Dbl Crop Barley/Sorghum","Cultivated","Cereals",TRUE,0
+236,"Dbl Crop WinWht/Sorghum","Cultivated","Cereals",TRUE,0
+237,"Dbl Crop Barley/Corn","Cultivated","Cereals",TRUE,0
+238,"Dbl Crop WinWht/Cotton","Cultivated","Cereals",TRUE,0
+239,"Dbl Crop Soybeans/Cotton","Cultivated","Cereals",TRUE,0
+240,"Dbl Crop Soybeans/Oats","Cultivated","Cereals",TRUE,0
+241,"Dbl Crop Corn/Soybeans","Cultivated","Cereals",TRUE,0
+242,"Blueberries","Cultivated","Grapes and Berries",FALSE,0
+243,"Cabbage","Cultivated","Vegetables",FALSE,0
+244,"Cauliflower","Cultivated","Vegetables",FALSE,0
+245,"Celery","Cultivated","Vegetables",FALSE,0
+246,"Radishes","Cultivated","Roots and Tubers",FALSE,0
+247,"Turnips","Cultivated","Roots and Tubers",FALSE,0
+248,"Eggplants","Cultivated","Vegetables",FALSE,0
+249,"Gourds","Cultivated","Vegetables",FALSE,0
+250,"Cranberries","Cultivated","Grapes and Berries",FALSE,0
+254,"Dbl Crop Barley/Soybeans","Cultivated","Cereals",TRUE,0
+37,"Other Hay/Non Alfalfa","Cultivated","Uncultivated field",FALSE,0
+59,"Sod/Grass Seed","Cultivated","Uncultivated field",FALSE,0
+60,"Switchgrass","Cultivated","Uncultivated field",FALSE,0
+63,"Forest","Uncultivated","Forest",FALSE,0
+64,"Shrubland","Uncultivated","Uncultivated field",FALSE,1
+65,"Barren","Uncultivated","Barren",FALSE,1
+81,"Clouds/No Data","Uncultivated","Other uncultivated",FALSE,0
+82,"Developed","Uncultivated","Developed",FALSE,0
+83,"Water","Uncultivated","Water",FALSE,0
+87,"Wetlands","Uncultivated","Wetlands",FALSE,0
+88,"Nonag/Undefined","Uncultivated",NA,FALSE,0
+92,"Aquaculture","Uncultivated","Aquaculture",FALSE,0
+111,"Open Water","Uncultivated","Water",FALSE,0
+112,"Perennial Ice/Snow","Uncultivated","Other uncultivated",FALSE,0
+121,"Developed/Open Space","Uncultivated","Developed",FALSE,0
+122,"Developed/Low Intensity","Uncultivated","Developed",FALSE,0
+123,"Developed/Med Intensity","Uncultivated","Developed",FALSE,0
+124,"Developed/High Intensity","Uncultivated","Developed",FALSE,0
+131,"Barren","Uncultivated","Barren",FALSE,1
+141,"Deciduous Forest","Uncultivated","Forest",FALSE,0
+142,"Evergreen Forest","Uncultivated","Forest",FALSE,0
+143,"Mixed Forest","Uncultivated","Forest",FALSE,0
+152,"Shrubland","Uncultivated","Uncultivated field",FALSE,1
+176,"Grass/Pasture","Uncultivated","Grassland/Pasture",FALSE,1
+190,"Woody Wetlands","Uncultivated","Wetlands",FALSE,0
+195,"Herbaceous Wetlands","Uncultivated","Wetlands",FALSE,0
