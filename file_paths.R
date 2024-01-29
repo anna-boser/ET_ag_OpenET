@@ -16,15 +16,15 @@ directory_path <- function(filepath){
 }
 
 # OpenET 2016-2021
-# From google earth engine; see https://code.earthengine.google.com/cb078c9f8933fb4814619c7982b8e615 for script
+# From google earth engine; see https://developers.google.com/earth-engine/datasets/catalog/OpenET_ENSEMBLE_CONUS_GRIDMET_MONTHLY_v2_0 for data; see https://code.earthengine.google.com/cb078c9f8933fb4814619c7982b8e615 for download script
 raw_openet_path <- here("data", "1_raw", "OpenET")
 
 # study area
-# generated in ET_agriculture repository. Basically just a 10km buffer around ag lands in the central valley. 
+# This is a 10km buffer around agricultural lands in the Central Valley. It is available in the data folder. 
 study_area_loc <- here("data", "1_raw", "study_area", "study_area.shp")
 
 # consistent grid -- study area
-# generated in 1_generate_datasets/1_intermediate/OpenET.R
+# This is a 70m grid generated in 1_generate_datasets/1_intermediate/OpenET.R. It is available in the data folder. 
 grid_loc <- here("data", "1_raw", "study_area", "grid.tif")
 
 # tifs of monthly OpenET data
@@ -32,7 +32,7 @@ grid_loc <- here("data", "1_raw", "study_area", "grid.tif")
 intermediate_openet_path <- here("data", "2_intermediate", "OpenET")
 
 # raw landiq/dwr agriculture data
-# from https://data.cnra.ca.gov/dataset/6c3d65e3-35bb-49e1-a51e-49d5a2cf09a9/resource/1da7b37a-dd97-4b69-a86a-fe824a252eaf/download/i15_crop_mapping_2019.zip
+# from https://data.cnra.ca.gov/dataset/6c3d65e3-35bb-49e1-a51e-49d5a2cf09a9/resource/1da7b37a-dd97-4b69-a86a-fe824a252eaf/download/i15_crop_mapping_2019.zip. All years available at: https://data.cnra.ca.gov/dataset/statewide-crop-mapping
 raw_dwr_path <- here("data", "1_raw", "DWR")
 
 # flat ag shapefile where agriculture is in CA
@@ -47,20 +47,23 @@ CA_ag_rast_loc <- here("data", "2_intermediate", "agriculture", "CA_ag.tif")
 # created in 1_generate_datasets/1_intermediate/agriculture.R
 ag_rast_loc <- here("data", "2_intermediate", "agriculture", "ag.tif")
 
-# a shapefile of California
+# a shapefile of California. 
+# Available in the data folder. 
 CA_shp_loc <- here("data", "1_raw", "study_area", "california", "california.shp")
 
-#Cropland data layer (CDL)
+# Cropland data layer (CDL)
+# Can be downloaded at https://www.nass.usda.gov/Research_and_Science/Cropland/Release/index.php
 CDL_path <- here("data", "1_raw", "CDL")
 CDL2019_loc <- here("data", "1_raw", "CDL", "CDL2019", "2019_30m_cdls.img")
 CDL2020_loc <- here("data", "1_raw", "CDL", "CDL2020", "2020_30m_cdls.img")
 CDL2021_loc <- here("data", "1_raw", "CDL", "CDL2021", "2021_30m_cdls.img")
 
 # CDL code dictionary
+# Created using CDL metadata and available in the data folder.
 cdl_code_dict_loc <- here("data", "1_raw", "CDL", "CDL_code_dictionary.csv")
 
 # Raw PET data
-# https://data.bris.ac.uk/data/dataset/qb8ujazzda0s2aykkv0oq0ctp
+# Download at https://data.bris.ac.uk/data/dataset/qb8ujazzda0s2aykkv0oq0ctp
 raw_PET_path <- here("data", "1_raw", "PET")
 
 # Intermediate PET data
@@ -74,13 +77,13 @@ PET_study_area_path <- here("data", "2_intermediate", "PET", "3_study_area_means
 # Obtained through personal correspondence with the CA State Soil Scientist 
 # Campbell, Steve - FPAC-NRCS, Portland, OR <steve.campbell@usda.gov>
 gNATSGO_grid_loc <- here("data", "1_raw", "CA_storie", "CA_gNATSGO_MuRaster_tif", "MapunitRaster_10m.tif")
-storie_index_loc <- here("data", "1_raw", "CA_storie", "CA_all_NASIS_Storie_Index_SSURGO_STATSGO2.csv")
+storie_index_loc <- here("data", "1_raw", "CA_storie", "CA_all_NASIS_Storie_Index_SSURGO_STATSGO2.csv") # available in the data folder
 
 # intermediate soil data
 # created in 1_generate_datasets/1_intermediate/5_soils.R 5.5_soils.py
 gNATSGO_storie_loc <- here("data", "2_intermediate", "CA_storie", "gNATSGO_storie.tif")
 CA_storie_resampled_loc <- here("data", "2_intermediate", "CA_storie", "CA_storie_index.tif")
-storie_loc <- here("data", "2_intermediate", "CA_storie", "storie_index.tif")
+storie_loc <- here("data", "2_intermediate", "CA_storie", "storie_index.tif") # available in data folder
 
 # DEM: 90m resolution western US elevation data
 # from https://www.sciencebase.gov/catalog/item/542aebf9e4b057766eed286a
@@ -119,7 +122,7 @@ counties_loc <- here("data", "1_raw", "counties", "cb_2018_us_county_500k.shp")
 county_table_loc <- here("data", "4_for_analysis", "additional_data", "counties.csv")
 
 # subbasin shapefile
-# https://geodata.lib.utexas.edu/catalog/stanford-kt110sd4399
+# available at https://geodata.lib.utexas.edu/catalog/stanford-kt110sd4399 and in the data folder.
 basin_loc <- here("data", "1_raw", "subbasins", "basin.shp")
 
 # a table with the location of a pixel and the basin it belongs in
