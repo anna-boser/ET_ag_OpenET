@@ -1,4 +1,4 @@
-# ET_ag_disALEXI
+# Field scale crop water consumption estimates reveal potential water savings in California agriculture
  
 ## Requirements and installation instructions
 
